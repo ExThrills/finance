@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 
 import { getCurrentUserId } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/db";
+import { toTransactionFieldValue } from "@/lib/mappers";
 import { fieldValueSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -14,22 +14,29 @@ export async function GET(request: Request) {
     const transactionId = searchParams.get("transactionId");
     const fieldDefinitionId = searchParams.get("fieldDefinitionId");
 
-    const where: Prisma.TransactionFieldValueWhereInput = {
-      transaction: { userId },
-    };
+    let query = supabaseAdmin
+      .from("transaction_field_values")
+      .select(
+        `
+        *,
+        transaction:transactions!transaction_field_values_transaction_id_fkey(user_id)
+      `
+      )
+      .eq("transaction.user_id", userId);
+
     if (transactionId) {
-      where.transactionId = transactionId;
+      query = query.eq("transaction_id", transactionId);
     }
     if (fieldDefinitionId) {
-      where.fieldDefinitionId = fieldDefinitionId;
+      query = query.eq("field_definition_id", fieldDefinitionId);
     }
 
-    const values = await prisma.transactionFieldValue.findMany({
-      where,
-      include: { fieldDefinition: true },
-    });
+    const { data, error } = await query;
+    if (error) {
+      throw error;
+    }
 
-    return NextResponse.json(values);
+    return NextResponse.json((data ?? []).map(toTransactionFieldValue));
   } catch (error) {
     console.error("GET /api/field-values failed", error);
     return NextResponse.json(
@@ -51,50 +58,53 @@ export async function POST(request: Request) {
       );
     }
 
-    const transaction = await prisma.transaction.findFirst({
-      where: { id: parsed.data.transactionId, userId },
-    });
-    if (!transaction) {
+    const { data: transaction, error: txError } = await supabaseAdmin
+      .from("transactions")
+      .select("id")
+      .eq("id", parsed.data.transactionId)
+      .eq("user_id", userId)
+      .single();
+    if (txError || !transaction) {
       return NextResponse.json(
         { error: "Transaction not found." },
         { status: 404 }
       );
     }
 
-    const fieldDefinition = await prisma.fieldDefinition.findFirst({
-      where: { id: parsed.data.fieldDefinitionId, userId },
-    });
-    if (!fieldDefinition) {
+    const { data: definition, error: defError } = await supabaseAdmin
+      .from("field_definitions")
+      .select("id")
+      .eq("id", parsed.data.fieldDefinitionId)
+      .eq("user_id", userId)
+      .single();
+    if (defError || !definition) {
       return NextResponse.json(
         { error: "Field definition not found." },
         { status: 404 }
       );
     }
 
-    const fieldValue = await prisma.transactionFieldValue.upsert({
-      where: {
-        transactionId_fieldDefinitionId: {
-          transactionId: parsed.data.transactionId,
-          fieldDefinitionId: parsed.data.fieldDefinitionId,
+    const { data, error } = await supabaseAdmin
+      .from("transaction_field_values")
+      .upsert(
+        {
+          transaction_id: parsed.data.transactionId,
+          field_definition_id: parsed.data.fieldDefinitionId,
+          value_text: parsed.data.valueText ?? null,
+          value_number: parsed.data.valueNumber ?? null,
+          value_date: parsed.data.valueDate ?? null,
+          value_bool: parsed.data.valueBool ?? null,
         },
-      },
-      update: {
-        valueText: parsed.data.valueText ?? null,
-        valueNumber: parsed.data.valueNumber ?? null,
-        valueDate: parsed.data.valueDate ?? null,
-        valueBool: parsed.data.valueBool ?? null,
-      },
-      create: {
-        transactionId: parsed.data.transactionId,
-        fieldDefinitionId: parsed.data.fieldDefinitionId,
-        valueText: parsed.data.valueText ?? null,
-        valueNumber: parsed.data.valueNumber ?? null,
-        valueDate: parsed.data.valueDate ?? null,
-        valueBool: parsed.data.valueBool ?? null,
-      },
-    });
+        { onConflict: "transaction_id,field_definition_id" }
+      )
+      .select()
+      .single();
 
-    return NextResponse.json(fieldValue);
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(toTransactionFieldValue(data));
   } catch (error) {
     console.error("POST /api/field-values failed", error);
     return NextResponse.json(

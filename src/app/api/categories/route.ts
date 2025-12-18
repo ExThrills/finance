@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/db";
+import { toCategory } from "@/lib/mappers";
 import { categorySchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +10,18 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const userId = await getCurrentUserId();
-    const categories = await prisma.category.findMany({
-      where: { userId },
-      orderBy: [{ kind: "asc" }, { name: "asc" }],
-    });
-    return NextResponse.json(categories);
+    const { data, error } = await supabaseAdmin
+      .from("categories")
+      .select("*")
+      .eq("user_id", userId)
+      .order("kind", { ascending: true })
+      .order("name", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json((data ?? []).map(toCategory));
   } catch (error) {
     console.error("GET /api/categories failed", error);
     return NextResponse.json(
@@ -34,14 +42,21 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const category = await prisma.category.create({
-      data: {
-        userId,
+    const { data, error } = await supabaseAdmin
+      .from("categories")
+      .insert({
+        user_id: userId,
         name: parsed.data.name,
         kind: parsed.data.kind,
-      },
-    });
-    return NextResponse.json(category);
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(toCategory(data));
   } catch (error) {
     console.error("POST /api/categories failed", error);
     return NextResponse.json(

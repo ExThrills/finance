@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/db";
+import { toAccount } from "@/lib/mappers";
 import { accountSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +10,17 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const userId = await getCurrentUserId();
-    const accounts = await prisma.account.findMany({
-      where: { userId },
-      orderBy: { createdAt: "asc" },
-    });
-    return NextResponse.json(accounts);
+    const { data, error } = await supabaseAdmin
+      .from("accounts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json((data ?? []).map(toAccount));
   } catch (error) {
     console.error("GET /api/accounts failed", error);
     return NextResponse.json({ error: "Failed to load accounts." }, { status: 500 });
@@ -31,14 +38,21 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const account = await prisma.account.create({
-      data: {
-        userId,
+    const { data, error } = await supabaseAdmin
+      .from("accounts")
+      .insert({
+        user_id: userId,
         name: parsed.data.name,
         type: parsed.data.type,
-      },
-    });
-    return NextResponse.json(account);
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(toAccount(data));
   } catch (error) {
     console.error("POST /api/accounts failed", error);
     return NextResponse.json({ error: "Failed to create account." }, { status: 500 });

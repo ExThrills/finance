@@ -1,37 +1,38 @@
-# Ledgerly - Personal Finance Starter
+# Ledgerly - Personal Finance Starter (Supabase)
 
-Ledgerly is a spreadsheet-style personal finance app built with Next.js, Tailwind, shadcn/ui, TanStack Table, Recharts, Prisma, and Postgres.
+Spreadsheet-style finance app built with Next.js, Tailwind, shadcn/ui, TanStack Table, Recharts, and Supabase (no Prisma now).
 
 ## Stack
 - Next.js App Router + TypeScript
 - Tailwind CSS + shadcn/ui
 - TanStack Table (editable cells)
 - Recharts
-- Prisma + Postgres
+- Supabase (Postgres) via `@supabase/supabase-js`
 
-## Local setup
-1. Copy environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-2. Update `DATABASE_URL` in `.env` to your Postgres connection string.
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Run migrations:
-   ```bash
-   npx prisma migrate dev --name init
-   ```
-5. Seed sample data:
-   ```bash
-   npm run db:seed
-   ```
-6. Start the dev server:
-   ```bash
-   npm run dev
-   ```
+## Environment
+Copy `.env.example` to `.env` and fill in:
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+Use the **pooler** or **direct** DB connection strings to generate these keys in Supabase. The service role key is required on the server for CRUD.
 
+## Supabase schema
+Run the SQL in `supabase/schema.sql` in the Supabase SQL editor (or psql) to create tables/indexes.
+
+## Seed data
+After the schema exists:
+```bash
+npm install
+npm run db:seed   # uses SUPABASE_SERVICE_ROLE_KEY
+```
+Seed creates `demo@ledgerly.app` (password `ledgerly-demo`), starter accounts, categories, and sample transactions.
+
+## Dev server
+```bash
+npm run dev
+```
 Open `http://localhost:3000`.
 
 ## Pages
@@ -43,5 +44,5 @@ Open `http://localhost:3000`.
 
 ## Notes
 - Amounts are stored in cents but displayed as dollars.
-- Auth is a local stub: the app uses the first user in the database. Seed creates `demo@ledgerly.app` with password `ledgerly-demo`.
-- Route Handlers power CRUD APIs (no server actions yet). You can swap to Clerk or Supabase Auth later by updating `lib/auth.ts` and securing the API routes.
+- Auth is a local stub: the first user in Supabase is used. Swap to a real auth provider when ready.
+- Route Handlers power CRUD APIs using the Supabase service role key.

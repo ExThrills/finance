@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 
 import { getCurrentUserId } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/db";
+import { toTransactionWithRelations } from "@/lib/mappers";
 import { transactionSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -16,26 +16,42 @@ export async function GET(request: Request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    const where: Prisma.TransactionWhereInput = { userId };
+    let query = supabaseAdmin
+      .from("transactions")
+      .select(
+        `
+        *,
+        account:accounts!transactions_account_id_fkey(*),
+        category:categories!transactions_category_id_fkey(*)
+      `
+      )
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+
     if (accountId) {
-      where.accountId = accountId;
+      query = query.eq("account_id", accountId);
     }
     if (categoryId) {
-      where.categoryId = categoryId === "uncategorized" ? null : categoryId;
+      query =
+        categoryId === "uncategorized"
+          ? query.is("category_id", null)
+          : query.eq("category_id", categoryId);
     }
-    if (startDate || endDate) {
-      where.date = {
-        gte: startDate ? new Date(startDate) : undefined,
-        lte: endDate ? new Date(endDate) : undefined,
-      };
+    if (startDate) {
+      query = query.gte("date", startDate);
+    }
+    if (endDate) {
+      query = query.lte("date", endDate);
     }
 
-    const transactions = await prisma.transaction.findMany({
-      where,
-      include: { account: true, category: true },
-      orderBy: { date: "desc" },
-    });
-    return NextResponse.json(transactions);
+    const { data, error } = await query;
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(
+      (data ?? []).map((row) => toTransactionWithRelations(row as any))
+    );
   } catch (error) {
     console.error("GET /api/transactions failed", error);
     return NextResponse.json(
@@ -56,19 +72,31 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const transaction = await prisma.transaction.create({
-      data: {
-        userId,
-        accountId: parsed.data.accountId,
-        categoryId: parsed.data.categoryId ?? null,
+    const { data, error } = await supabaseAdmin
+      .from("transactions")
+      .insert({
+        user_id: userId,
+        account_id: parsed.data.accountId,
+        category_id: parsed.data.categoryId ?? null,
         amount: parsed.data.amount,
         date: parsed.data.date,
         description: parsed.data.description,
         notes: parsed.data.notes ?? null,
-      },
-      include: { account: true, category: true },
-    });
-    return NextResponse.json(transaction);
+      })
+      .select(
+        `
+        *,
+        account:accounts!transactions_account_id_fkey(*),
+        category:categories!transactions_category_id_fkey(*)
+      `
+      )
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(toTransactionWithRelations(data as any));
   } catch (error) {
     console.error("POST /api/transactions failed", error);
     return NextResponse.json(

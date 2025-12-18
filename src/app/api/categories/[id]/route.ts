@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/db";
+import { toCategory } from "@/lib/mappers";
 import { categoryUpdateSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -20,18 +21,28 @@ export async function PATCH(request: Request, { params }: Params) {
       );
     }
 
-    const existing = await prisma.category.findFirst({
-      where: { id: params.id, userId },
-    });
-    if (!existing) {
+    const { data: existing, error: findError } = await supabaseAdmin
+      .from("categories")
+      .select("*")
+      .eq("id", params.id)
+      .eq("user_id", userId)
+      .single();
+    if (findError || !existing) {
       return NextResponse.json({ error: "Category not found." }, { status: 404 });
     }
 
-    const category = await prisma.category.update({
-      where: { id: params.id },
-      data: parsed.data,
-    });
-    return NextResponse.json(category);
+    const { data, error } = await supabaseAdmin
+      .from("categories")
+      .update(parsed.data)
+      .eq("id", params.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(toCategory(data));
   } catch (error) {
     console.error("PATCH /api/categories/[id] failed", error);
     return NextResponse.json(
@@ -44,13 +55,27 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_: Request, { params }: Params) {
   try {
     const userId = await getCurrentUserId();
-    const existing = await prisma.category.findFirst({
-      where: { id: params.id, userId },
-    });
-    if (!existing) {
+    const { error: findError } = await supabaseAdmin
+      .from("categories")
+      .select("id")
+      .eq("id", params.id)
+      .eq("user_id", userId)
+      .single();
+
+    if (findError) {
       return NextResponse.json({ error: "Category not found." }, { status: 404 });
     }
-    await prisma.category.delete({ where: { id: params.id } });
+
+    const { error } = await supabaseAdmin
+      .from("categories")
+      .delete()
+      .eq("id", params.id)
+      .eq("user_id", userId);
+
+    if (error) {
+      throw error;
+    }
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("DELETE /api/categories/[id] failed", error);

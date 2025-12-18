@@ -1,11 +1,18 @@
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/db";
+import type { Database } from "@/types/database";
 
 export async function getCurrentUser() {
-  const user = await prisma.user.findFirst();
-  if (!user) {
+  const { data, error } = await supabaseAdmin
+    .from<Database["public"]["Tables"]["users"]["Row"]>("users")
+    .select("*")
+    .limit(1)
+    .single();
+
+  if (error || !data) {
     throw new Error("No users found. Run the seed script first.");
   }
-  return user;
+
+  return data;
 }
 
 export async function getCurrentUserId() {

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/db";
+import { toTransactionFieldValue } from "@/lib/mappers";
 import { fieldValueUpdateSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -20,39 +21,53 @@ export async function PATCH(request: Request, { params }: Params) {
       );
     }
 
-    const existing = await prisma.transactionFieldValue.findFirst({
-      where: { id: params.id, transaction: { userId } },
-      include: { transaction: true },
-    });
-    if (!existing) {
+    const { data: existing, error: findError } = await supabaseAdmin
+      .from("transaction_field_values")
+      .select(
+        `
+        *,
+        transaction:transactions!transaction_field_values_transaction_id_fkey(user_id)
+      `
+      )
+      .eq("id", params.id)
+      .eq("transaction.user_id", userId)
+      .single();
+    if (findError || !existing) {
       return NextResponse.json(
         { error: "Field value not found." },
         { status: 404 }
       );
     }
 
-    const value = await prisma.transactionFieldValue.update({
-      where: { id: params.id },
-      data: {
-        valueText:
+    const { data, error } = await supabaseAdmin
+      .from("transaction_field_values")
+      .update({
+        value_text:
           typeof parsed.data.valueText === "undefined"
-            ? existing.valueText
+            ? existing.value_text
             : parsed.data.valueText,
-        valueNumber:
+        value_number:
           typeof parsed.data.valueNumber === "undefined"
-            ? existing.valueNumber
+            ? existing.value_number
             : parsed.data.valueNumber,
-        valueDate:
+        value_date:
           typeof parsed.data.valueDate === "undefined"
-            ? existing.valueDate
+            ? existing.value_date
             : parsed.data.valueDate,
-        valueBool:
+        value_bool:
           typeof parsed.data.valueBool === "undefined"
-            ? existing.valueBool
+            ? existing.value_bool
             : parsed.data.valueBool,
-      },
-    });
-    return NextResponse.json(value);
+      })
+      .eq("id", params.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(toTransactionFieldValue(data));
   } catch (error) {
     console.error("PATCH /api/field-values/[id] failed", error);
     return NextResponse.json(
@@ -65,16 +80,30 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_: Request, { params }: Params) {
   try {
     const userId = await getCurrentUserId();
-    const existing = await prisma.transactionFieldValue.findFirst({
-      where: { id: params.id, transaction: { userId } },
-    });
-    if (!existing) {
+    const { error: findError } = await supabaseAdmin
+      .from("transaction_field_values")
+      .select(
+        `
+        id,
+        transaction:transactions!transaction_field_values_transaction_id_fkey(user_id)
+      `
+      )
+      .eq("id", params.id)
+      .eq("transaction.user_id", userId)
+      .single();
+    if (findError) {
       return NextResponse.json(
         { error: "Field value not found." },
         { status: 404 }
       );
     }
-    await prisma.transactionFieldValue.delete({ where: { id: params.id } });
+    const { error } = await supabaseAdmin
+      .from("transaction_field_values")
+      .delete()
+      .eq("id", params.id);
+    if (error) {
+      throw error;
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("DELETE /api/field-values/[id] failed", error);

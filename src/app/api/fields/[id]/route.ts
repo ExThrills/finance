@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/db";
+import { toFieldDefinition } from "@/lib/mappers";
 import { fieldDefinitionUpdateSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -20,26 +21,39 @@ export async function PATCH(request: Request, { params }: Params) {
       );
     }
 
-    const existing = await prisma.fieldDefinition.findFirst({
-      where: { id: params.id, userId },
-    });
-    if (!existing) {
+    const { data: existing, error: findError } = await supabaseAdmin
+      .from("field_definitions")
+      .select("*")
+      .eq("id", params.id)
+      .eq("user_id", userId)
+      .single();
+    if (findError || !existing) {
       return NextResponse.json({ error: "Field not found." }, { status: 404 });
     }
 
-    const field = await prisma.fieldDefinition.update({
-      where: { id: params.id },
-      data: {
-        ...parsed.data,
-        selectOptions:
-          parsed.data.fieldType === "select"
-            ? parsed.data.selectOptions ?? existing.selectOptions ?? []
-            : parsed.data.fieldType
-            ? null
-            : undefined,
-      },
-    });
-    return NextResponse.json(field);
+    const patch = {
+      name: parsed.data.name,
+      field_type: parsed.data.fieldType,
+      select_options:
+        parsed.data.fieldType === "select"
+          ? parsed.data.selectOptions ?? existing.select_options ?? []
+          : parsed.data.fieldType
+          ? null
+          : undefined,
+    };
+
+    const { data, error } = await supabaseAdmin
+      .from("field_definitions")
+      .update(patch)
+      .eq("id", params.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(toFieldDefinition(data));
   } catch (error) {
     console.error("PATCH /api/fields/[id] failed", error);
     return NextResponse.json({ error: "Failed to update field." }, { status: 500 });
@@ -49,13 +63,23 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_: Request, { params }: Params) {
   try {
     const userId = await getCurrentUserId();
-    const existing = await prisma.fieldDefinition.findFirst({
-      where: { id: params.id, userId },
-    });
-    if (!existing) {
+    const { error: findError } = await supabaseAdmin
+      .from("field_definitions")
+      .select("id")
+      .eq("id", params.id)
+      .eq("user_id", userId)
+      .single();
+    if (findError) {
       return NextResponse.json({ error: "Field not found." }, { status: 404 });
     }
-    await prisma.fieldDefinition.delete({ where: { id: params.id } });
+    const { error } = await supabaseAdmin
+      .from("field_definitions")
+      .delete()
+      .eq("id", params.id)
+      .eq("user_id", userId);
+    if (error) {
+      throw error;
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("DELETE /api/fields/[id] failed", error);
