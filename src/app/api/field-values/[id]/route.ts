@@ -9,6 +9,13 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
+const toDateString = (value: Date | string | null | undefined) => {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return value ?? null;
+};
+
 export async function PATCH(request: NextRequest, { params }: Params) {
   const { id } = await params;
   try {
@@ -54,7 +61,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         value_date:
           typeof parsed.data.valueDate === "undefined"
             ? existing.value_date
-            : parsed.data.valueDate,
+            : toDateString(parsed.data.valueDate),
         value_bool:
           typeof parsed.data.valueBool === "undefined"
             ? existing.value_bool

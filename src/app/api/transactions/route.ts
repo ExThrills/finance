@@ -7,6 +7,8 @@ import { transactionSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
+const toDateString = (date: Date) => date.toISOString().slice(0, 10);
+
 export async function GET(request: Request) {
   try {
     const userId = await getCurrentUserId();
@@ -79,7 +81,7 @@ export async function POST(request: Request) {
         account_id: parsed.data.accountId,
         category_id: parsed.data.categoryId ?? null,
         amount: parsed.data.amount,
-        date: parsed.data.date,
+        date: toDateString(parsed.data.date),
         description: parsed.data.description,
         notes: parsed.data.notes ?? null,
       })

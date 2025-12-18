@@ -1,9 +1,8 @@
 import { supabaseAdmin } from "@/lib/db";
-import type { Database } from "@/types/database";
 
 export async function getCurrentUser() {
   const { data, error } = await supabaseAdmin
-    .from<Database["public"]["Tables"]["users"]["Row"]>("users")
+    .from("users")
     .select("*")
     .limit(1)
     .single();

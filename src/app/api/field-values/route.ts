@@ -7,6 +7,13 @@ import { fieldValueSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
+const toDateString = (value: Date | string | null | undefined) => {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return value ?? null;
+};
+
 export async function GET(request: Request) {
   try {
     const userId = await getCurrentUserId();
@@ -92,7 +99,7 @@ export async function POST(request: Request) {
           field_definition_id: parsed.data.fieldDefinitionId,
           value_text: parsed.data.valueText ?? null,
           value_number: parsed.data.valueNumber ?? null,
-          value_date: parsed.data.valueDate ?? null,
+          value_date: toDateString(parsed.data.valueDate),
           value_bool: parsed.data.valueBool ?? null,
         },
         { onConflict: "transaction_id,field_definition_id" }

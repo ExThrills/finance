@@ -28,29 +28,56 @@ export interface Database {
           password_hash?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       accounts: {
         Row: {
           id: string;
           user_id: string;
           name: string;
-          type: string;
+          type:
+            | "checking"
+            | "savings"
+            | "credit"
+            | "cash"
+            | "investment"
+            | "other";
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
           name: string;
-          type: string;
+          type:
+            | "checking"
+            | "savings"
+            | "credit"
+            | "cash"
+            | "investment"
+            | "other";
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
           name?: string;
-          type?: string;
+          type?:
+            | "checking"
+            | "savings"
+            | "credit"
+            | "cash"
+            | "investment"
+            | "other";
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "accounts_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       categories: {
         Row: {
@@ -74,6 +101,14 @@ export interface Database {
           kind?: "expense" | "income";
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "categories_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       transactions: {
         Row: {
@@ -112,6 +147,26 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_category_id_fkey";
+            columns: ["category_id"];
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       field_definitions: {
         Row: {
@@ -138,6 +193,14 @@ export interface Database {
           select_options?: Json | null;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "field_definitions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       transaction_field_values: {
         Row: {
@@ -167,7 +230,33 @@ export interface Database {
           value_date?: string | null;
           value_bool?: boolean | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: "transaction_field_values_field_definition_id_fkey";
+            columns: ["field_definition_id"];
+            referencedRelation: "field_definitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaction_field_values_transaction_id_fkey";
+            columns: ["transaction_id"];
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          }
+        ];
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }
