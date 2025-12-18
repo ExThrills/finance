@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/db";
@@ -7,9 +7,10 @@ import { categoryUpdateSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const { id } = await params;
   try {
     const userId = await getCurrentUserId();
     const body = await request.json();
@@ -24,7 +25,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const { data: existing, error: findError } = await supabaseAdmin
       .from("categories")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", userId)
       .single();
     if (findError || !existing) {
@@ -34,7 +35,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const { data, error } = await supabaseAdmin
       .from("categories")
       .update(parsed.data)
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -52,13 +53,14 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_: Request, { params }: Params) {
+export async function DELETE(_: NextRequest, { params }: Params) {
+  const { id } = await params;
   try {
     const userId = await getCurrentUserId();
     const { error: findError } = await supabaseAdmin
       .from("categories")
       .select("id")
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", userId)
       .single();
 
@@ -69,7 +71,7 @@ export async function DELETE(_: Request, { params }: Params) {
     const { error } = await supabaseAdmin
       .from("categories")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", userId);
 
     if (error) {

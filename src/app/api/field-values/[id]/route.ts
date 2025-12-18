@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/db";
@@ -7,9 +7,10 @@ import { fieldValueUpdateSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const { id } = await params;
   try {
     const userId = await getCurrentUserId();
     const body = await request.json();
@@ -29,7 +30,7 @@ export async function PATCH(request: Request, { params }: Params) {
         transaction:transactions!transaction_field_values_transaction_id_fkey(user_id)
       `
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("transaction.user_id", userId)
       .single();
     if (findError || !existing) {
@@ -59,7 +60,7 @@ export async function PATCH(request: Request, { params }: Params) {
             ? existing.value_bool
             : parsed.data.valueBool,
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -77,7 +78,8 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_: Request, { params }: Params) {
+export async function DELETE(_: NextRequest, { params }: Params) {
+  const { id } = await params;
   try {
     const userId = await getCurrentUserId();
     const { error: findError } = await supabaseAdmin
@@ -88,7 +90,7 @@ export async function DELETE(_: Request, { params }: Params) {
         transaction:transactions!transaction_field_values_transaction_id_fkey(user_id)
       `
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("transaction.user_id", userId)
       .single();
     if (findError) {
@@ -100,7 +102,7 @@ export async function DELETE(_: Request, { params }: Params) {
     const { error } = await supabaseAdmin
       .from("transaction_field_values")
       .delete()
-      .eq("id", params.id);
+      .eq("id", id);
     if (error) {
       throw error;
     }
