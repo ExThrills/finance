@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import type { ColumnDef, RowSelectionState, SortingState } from "@tanstack/react-table";
 import {
   flexRender,
   getCoreRowModel,
@@ -195,9 +195,32 @@ export function TransactionsTable({
   const [sorting, setSorting] = useState<SortingState>([
     { id: "date", desc: true },
   ]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [bulkCategoryId, setBulkCategoryId] = useState("");
+  const [bulkAccountId, setBulkAccountId] = useState("");
+  const [bulkPending, setBulkPending] = useState("");
 
   const columns = useMemo<ColumnDef<TransactionWithRelations>[]>(
     () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllPageRowsSelected()}
+            onChange={(event) =>
+              table.toggleAllPageRowsSelected(event.target.checked)
+            }
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={(event) => row.toggleSelected(event.target.checked)}
+          />
+        ),
+      },
       {
         accessorKey: "date",
         header: "Date",
@@ -290,11 +313,29 @@ export function TransactionsTable({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: { sorting, rowSelection },
+    onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
+    enableRowSelection: true,
+    getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedIds = selectedRows.map((row) => row.original.id);
+
+  const applyBulkUpdate = (patch: Record<string, unknown>) => {
+    selectedRows.forEach((row) => {
+      onUpdate(row.original.id, patch);
+    });
+    table.resetRowSelection();
+  };
+
+  const handleBulkDelete = () => {
+    selectedRows.forEach((row) => onDelete(row.original.id));
+    table.resetRowSelection();
+  };
 
   if (loading) {
     return (
@@ -313,7 +354,86 @@ export function TransactionsTable({
   }
 
   return (
-    <Table>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-muted/20 p-3 text-sm">
+        <div className="font-medium">
+          {selectedIds.length} selected
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={bulkCategoryId} onValueChange={setBulkCategoryId}>
+            <SelectTrigger className="h-8 w-[180px]">
+              <SelectValue placeholder="Set category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!selectedIds.length || !bulkCategoryId}
+            onClick={() =>
+              applyBulkUpdate({ categoryId: bulkCategoryId || null })
+            }
+          >
+            Apply
+          </Button>
+          <Select value={bulkAccountId} onValueChange={setBulkAccountId}>
+            <SelectTrigger className="h-8 w-[180px]">
+              <SelectValue placeholder="Set account" />
+            </SelectTrigger>
+            <SelectContent>
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!selectedIds.length || !bulkAccountId}
+            onClick={() =>
+              applyBulkUpdate({ accountId: bulkAccountId })
+            }
+          >
+            Apply
+          </Button>
+          <Select value={bulkPending} onValueChange={setBulkPending}>
+            <SelectTrigger className="h-8 w-[160px]">
+              <SelectValue placeholder="Pending state" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Mark pending</SelectItem>
+              <SelectItem value="cleared">Mark cleared</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!selectedIds.length || !bulkPending}
+            onClick={() =>
+              applyBulkUpdate({ isPending: bulkPending === "pending" })
+            }
+          >
+            Apply
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={!selectedIds.length}
+            onClick={handleBulkDelete}
+          >
+            Delete selected
+          </Button>
+        </div>
+      </div>
+      <Table>
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>
@@ -347,7 +467,7 @@ export function TransactionsTable({
       </TableBody>
       <tfoot>
         <TableRow>
-          <TableCell colSpan={4} className="text-right font-semibold">
+          <TableCell colSpan={5} className="text-right font-semibold">
             Total
           </TableCell>
           <TableCell className="text-right font-semibold">
@@ -361,6 +481,7 @@ export function TransactionsTable({
           <TableCell />
         </TableRow>
       </tfoot>
-    </Table>
+      </Table>
+    </div>
   );
 }

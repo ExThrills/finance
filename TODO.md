@@ -43,9 +43,9 @@
 - [x] Webhooks: outbound alerts; inbound hooks for sync events.
 
 ## 9) UX Polish
-- [ ] Global account switcher to pivot dashboards by account/card/type.
-- [ ] Card dashboard widgets (balance, available credit, utilization, rewards, statement dates, recent activity).
-- [ ] Transaction table polish: batch actions, quick filters, inline category/account edits.
+- [x] Global account switcher to pivot dashboards by account/card/type.
+- [x] Card dashboard widgets (balance, available credit, utilization, rewards, statement dates, recent activity).
+- [x] Transaction table polish: batch actions, quick filters, inline category/account edits.
 
 ## 10) QA & Ops
 - [ ] Add end-to-end tests for transaction creation (account required), transfers, reconciliations, budgets, and alerts.

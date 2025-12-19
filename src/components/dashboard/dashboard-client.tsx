@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { fetchJson } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format";
 import type { AccountRecord, TransactionWithRelations } from "@/types/finance";
+import { useAccountScope } from "@/components/account-scope-context";
 
 const palette = ["#0f172a", "#334155", "#f59e0b", "#10b981", "#ef4444"];
 
@@ -34,6 +35,7 @@ export function DashboardClient() {
   const [month, setMonth] = useState(() => monthKey(new Date()));
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>([]);
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
+  const { scope } = useAccountScope();
 
   useEffect(() => {
     const load = async () => {
@@ -77,12 +79,57 @@ export function DashboardClient() {
     return new Date(year, monthStr, 0, 23, 59, 59);
   }, [month]);
 
+  const accountById = useMemo(
+    () => new Map(accounts.map((account) => [account.id, account])),
+    [accounts]
+  );
+
+  const scopedAccounts = useMemo(() => {
+    if (scope.kind === "all") {
+      return accounts;
+    }
+    if (scope.kind === "account") {
+      return accounts.filter((account) => account.id === scope.value);
+    }
+    if (scope.kind === "type") {
+      return accounts.filter((account) => account.type === scope.value);
+    }
+    if (scope.kind === "institution") {
+      return accounts.filter(
+        (account) => account.institution === scope.value
+      );
+    }
+    return accounts;
+  }, [accounts, scope]);
+
+  const scopedTransactions = useMemo(() => {
+    if (scope.kind === "all") {
+      return transactions;
+    }
+    if (scope.kind === "account") {
+      return transactions.filter((tx) => tx.accountId === scope.value);
+    }
+    if (scope.kind === "type") {
+      return transactions.filter((tx) => {
+        const account = accountById.get(tx.accountId);
+        return account?.type === scope.value;
+      });
+    }
+    if (scope.kind === "institution") {
+      return transactions.filter((tx) => {
+        const account = accountById.get(tx.accountId);
+        return account?.institution === scope.value;
+      });
+    }
+    return transactions;
+  }, [accountById, scope, transactions]);
+
   const monthTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
+    return scopedTransactions.filter((tx) => {
       const date = new Date(tx.date);
       return date >= monthStart && date <= monthEnd;
     });
-  }, [transactions, monthEnd, monthStart]);
+  }, [monthEnd, monthStart, scopedTransactions]);
 
   const { incomeTotal, expenseTotal, netTotal } = useMemo(() => {
     return monthTransactions.reduce(
@@ -143,10 +190,10 @@ export function DashboardClient() {
 
   const creditAccounts = useMemo(
     () =>
-      accounts.filter(
+      scopedAccounts.filter(
         (account) => account.type === "credit" && account.creditLimit
       ),
-    [accounts]
+    [scopedAccounts]
   );
 
   const { totalLimit, totalBalance, overallUtilization } = useMemo(() => {
@@ -164,6 +211,17 @@ export function DashboardClient() {
         totals.totalLimit > 0 ? totals.totalBalance / totals.totalLimit : 0,
     };
   }, [creditAccounts]);
+
+  const recentByAccount = useMemo(() => {
+    const map = new Map<string, TransactionWithRelations>();
+    scopedTransactions.forEach((tx) => {
+      const existing = map.get(tx.accountId);
+      if (!existing || new Date(tx.date) > new Date(existing.date)) {
+        map.set(tx.accountId, tx);
+      }
+    });
+    return map;
+  }, [scopedTransactions]);
 
   return (
     <div className="space-y-6">
@@ -285,6 +343,86 @@ export function DashboardClient() {
               <Bar dataKey="value" fill="#f59e0b" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Card dashboard</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 lg:grid-cols-2">
+          {creditAccounts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No credit cards in this scope.
+            </p>
+          ) : (
+            creditAccounts.map((account) => {
+              const balance = Math.abs(account.currentBalance);
+              const limit = account.creditLimit ?? 0;
+              const utilization = limit ? balance / limit : 0;
+              const recent = recentByAccount.get(account.id);
+              return (
+                <div
+                  key={account.id}
+                  className="rounded-xl border bg-muted/20 p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-semibold">{account.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {account.institution ?? "Unassigned"}
+                        {account.last4 ? ` · ${account.last4}` : ""}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs font-semibold ${
+                        utilization >= 0.3 ? "text-rose-700" : "text-emerald-700"
+                      }`}
+                    >
+                      {(utilization * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Balance</p>
+                      <p className="font-semibold">{formatCurrency(balance)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Available credit
+                      </p>
+                      <p className="font-semibold">
+                        {formatCurrency(
+                          account.availableCredit ??
+                            (limit ? limit - balance : 0)
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Rewards</p>
+                      <p className="font-semibold">
+                        {account.rewardCurrency ?? "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Statement due
+                      </p>
+                      <p className="font-semibold">
+                        {account.statementDueDay ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    Recent activity:{" "}
+                    {recent
+                      ? `${recent.description} · ${formatCurrency(recent.amount)}`
+                      : "No recent activity"}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </CardContent>
       </Card>
 

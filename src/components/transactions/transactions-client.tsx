@@ -12,6 +12,7 @@ import type {
   TagRecord,
   TransactionWithRelations,
 } from "@/types/finance";
+import { useAccountScope } from "@/components/account-scope-context";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -80,6 +81,7 @@ export function TransactionsClient() {
   const [saveOpen, setSaveOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [loading, setLoading] = useState(true);
+  const { scope } = useAccountScope();
 
   const accountById = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
@@ -115,6 +117,21 @@ export function TransactionsClient() {
     }
 
     return transactions.filter((tx) => {
+      if (scope.kind === "account" && tx.accountId !== scope.value) {
+        return false;
+      }
+      if (scope.kind === "type") {
+        const account = accountById.get(tx.accountId);
+        if (!account || account.type !== scope.value) {
+          return false;
+        }
+      }
+      if (scope.kind === "institution") {
+        const account = accountById.get(tx.accountId);
+        if (!account || account.institution !== scope.value) {
+          return false;
+        }
+      }
       if (filters.accountId && tx.accountId !== filters.accountId) {
         return false;
       }
@@ -162,7 +179,7 @@ export function TransactionsClient() {
       }
       return true;
     });
-  }, [transactions, filters, accountById]);
+  }, [transactions, filters, accountById, scope]);
 
   const inboxCount = useMemo(
     () => transactions.filter((tx) => !tx.categoryId).length,
@@ -216,6 +233,11 @@ export function TransactionsClient() {
 
   const handleDeleted = (id: string) => {
     setTransactions((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const applyQuickFilter = (next: Partial<Filters>) => {
+    setActiveViewId("");
+    setFilters((prev) => ({ ...prev, ...next }));
   };
 
   const applyInboxFilters = () => {
@@ -483,6 +505,77 @@ export function TransactionsClient() {
             </Button>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            applyQuickFilter({
+              status: "pending",
+              startDate: "",
+              endDate: "",
+            })
+          }
+        >
+          Pending
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            applyQuickFilter({
+              status: "cleared",
+              startDate: "",
+              endDate: "",
+            })
+          }
+        >
+          Cleared
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            applyQuickFilter({
+              categoryId: "uncategorized",
+              startDate: "",
+              endDate: "",
+            })
+          }
+        >
+          Uncategorized
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            const now = new Date();
+            const start = new Date(now);
+            start.setDate(start.getDate() - 6);
+            applyQuickFilter({
+              startDate: formatDateInput(start),
+              endDate: formatDateInput(now),
+            });
+          }}
+        >
+          Last 7 days
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            applyQuickFilter({
+              startDate: "",
+              endDate: "",
+              status: "all",
+              categoryId: "",
+            })
+          }
+        >
+          Reset quick filters
+        </Button>
       </div>
 
       <TransactionsFilters
