@@ -177,7 +177,7 @@ export const recurringSeriesUpdateSchema = recurringSeriesSchema.partial();
 
 export const ruleActionSchema = z.object({
   actionType: z.enum(["set_category", "add_tag", "set_note", "set_splits"]),
-  actionPayload: z.record(z.any()),
+  actionPayload: z.record(z.string(), z.any()),
 });
 
 export const automationRuleSchema = z.object({
