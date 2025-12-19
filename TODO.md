@@ -10,12 +10,12 @@
 - [x] API: transaction create/update to require account selection and support pending/cleared/transfer flags (recurring fields stored).
 - [x] API: transfers/payment endpoint to create dual-leg entries (e.g., checking → credit card payment).
 - [x] UI: transaction composer adds pending toggle and transfer/payment toggle with destination account enforcement.
-- [ ] UI: splits/tags in composer and API (still pending; requires schema design for splits/tags).
+- [x] API: splits/tags support on create/update; schema and seed updated. UI for splits/tags still pending.
 
 ## 3) Views, Filters, and Saved Searches
 - [ ] Filters: by account, account type (checking/savings/credit), institution, category, date, tags, pending/cleared.
 - [ ] Uncategorized inbox view to clear unassigned items fast.
-- [ ] Saved views with persistence (per user) for common slices (e.g., “Gas on Amex”, “Travel on Checking”).
+- [ ] Saved views with persistence (per user) for common slices (e.g., "Gas on Amex", "Travel on Checking").
 
 ## 4) Budgets & Alerts
 - [ ] Budgets: per category and per account/card with monthly/weekly periods; track actual vs target.

@@ -27,6 +27,13 @@ export type CategoryRecord = {
   createdAt: string;
 };
 
+export type TagRecord = {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: string;
+};
+
 export type FieldDefinitionRecord = {
   id: string;
   userId: string;
@@ -54,6 +61,18 @@ export type TransactionRecord = {
   updatedAt: string;
 };
 
+export type TransactionSplitRecord = {
+  id: string;
+  transactionId: string;
+  accountId: string | null;
+  categoryId: string | null;
+  amount: number;
+  description: string | null;
+  notes: string | null;
+  account?: AccountRecord | null;
+  category?: CategoryRecord | null;
+};
+
 export type TransactionFieldValueRecord = {
   id: string;
   transactionId: string;
@@ -67,6 +86,8 @@ export type TransactionFieldValueRecord = {
 export type TransactionWithRelations = TransactionRecord & {
   account: AccountRecord | null;
   category: CategoryRecord | null;
+  splits?: TransactionSplitRecord[];
+  tags?: TagRecord[];
 };
 
 export type TransferRecord = {

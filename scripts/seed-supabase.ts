@@ -101,6 +101,8 @@ async function main() {
   const salaryId = randomUUID();
   const cashbackId = randomUUID();
   const amexPaymentTransferId = randomUUID();
+  const travelTagId = randomUUID();
+  const billsTagId = randomUUID();
 
   await supabase.from("categories").insert([
     { id: rentId, user_id: userId, name: "Rent", kind: "expense" },
@@ -109,6 +111,11 @@ async function main() {
     { id: diningId, user_id: userId, name: "Dining", kind: "expense" },
     { id: salaryId, user_id: userId, name: "Salary", kind: "income" },
     { id: cashbackId, user_id: userId, name: "Cashback", kind: "income" },
+  ]);
+
+  await supabase.from("tags").insert([
+    { id: travelTagId, user_id: userId, name: "Travel" },
+    { id: billsTagId, user_id: userId, name: "Bills" },
   ]);
 
   const merchantFieldId = randomUUID();
@@ -284,6 +291,57 @@ async function main() {
     memo: "Monthly Amex payment",
     occurred_at: daysFrom(monthStart, 18),
   });
+
+  // sample splits on a grocery trip
+  const grocerySplitTx = randomUUID();
+  const { data: splitTx, error: splitTxError } = await supabase
+    .from("transactions")
+    .insert({
+      id: grocerySplitTx,
+      user_id: userId,
+      account_id: checkingId,
+      category_id: groceriesId,
+      amount: 15000,
+      date: daysFrom(monthStart, 7),
+      description: "Costco split receipt",
+      notes: "Groceries + household",
+      is_pending: false,
+    })
+    .select()
+    .single();
+  if (splitTxError) throw splitTxError;
+
+  await supabase.from("transaction_splits").insert([
+    {
+      transaction_id: grocerySplitTx,
+      account_id: checkingId,
+      category_id: groceriesId,
+      amount: 9000,
+      description: "Food",
+      notes: null,
+    },
+    {
+      transaction_id: grocerySplitTx,
+      account_id: checkingId,
+      category_id: diningId,
+      amount: 2000,
+      description: "Snacks",
+      notes: null,
+    },
+    {
+      transaction_id: grocerySplitTx,
+      account_id: checkingId,
+      category_id: null,
+      amount: 4000,
+      description: "Household",
+      notes: "Uncategorized remainder",
+    },
+  ]);
+
+  await supabase.from("transaction_tags").insert([
+    { transaction_id: grocerySplitTx, tag_id: travelTagId },
+    { transaction_id: grocerySplitTx, tag_id: billsTagId },
+  ]);
 }
 
 main()

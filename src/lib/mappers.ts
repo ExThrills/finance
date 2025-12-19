@@ -3,6 +3,8 @@ import type {
   AccountRecord,
   CategoryRecord,
   FieldDefinitionRecord,
+  TagRecord,
+  TransactionSplitRecord,
   TransactionFieldValueRecord,
   TransactionWithRelations,
 } from "@/types/finance";
@@ -73,6 +75,13 @@ export function toTransactionWithRelations(
   row: Tables["transactions"]["Row"] & {
     account?: Tables["accounts"]["Row"] | null;
     category?: Tables["categories"]["Row"] | null;
+    splits?: (Tables["transaction_splits"]["Row"] & {
+      account?: Tables["accounts"]["Row"] | null;
+      category?: Tables["categories"]["Row"] | null;
+    })[];
+    tags?: {
+      tag?: Tables["tags"]["Row"] | null;
+    }[];
   }
 ): TransactionWithRelations {
   return {
@@ -93,5 +102,25 @@ export function toTransactionWithRelations(
     updatedAt: row.updated_at,
     account: row.account ? toAccount(row.account) : null,
     category: row.category ? toCategory(row.category) : null,
+    splits: row.splits
+      ? row.splits.map<TransactionSplitRecord>((split) => ({
+          id: split.id,
+          transactionId: split.transaction_id,
+          accountId: split.account_id,
+          categoryId: split.category_id,
+          amount: split.amount,
+          description: split.description,
+          notes: split.notes,
+          account: split.account ? toAccount(split.account) : null,
+          category: split.category ? toCategory(split.category) : null,
+        }))
+      : [],
+    tags: row.tags
+      ? row.tags
+          .map<TagRecord | null>((item) =>
+            item.tag ? { id: item.tag.id, userId: item.tag.user_id, name: item.tag.name, createdAt: item.tag.created_at } : null
+          )
+          .filter((tag): tag is TagRecord => Boolean(tag))
+      : [],
   };
 }

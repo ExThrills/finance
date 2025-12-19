@@ -360,6 +360,117 @@ export interface Database {
           }
         ];
       };
+      tags: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tags_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      transaction_tags: {
+        Row: {
+          id: string;
+          transaction_id: string;
+          tag_id: string;
+        };
+        Insert: {
+          id?: string;
+          transaction_id: string;
+          tag_id: string;
+        };
+        Update: {
+          id?: string;
+          transaction_id?: string;
+          tag_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transaction_tags_tag_id_fkey";
+            columns: ["tag_id"];
+            referencedRelation: "tags";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaction_tags_transaction_id_fkey";
+            columns: ["transaction_id"];
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      transaction_splits: {
+        Row: {
+          id: string;
+          transaction_id: string;
+          account_id: string | null;
+          category_id: string | null;
+          amount: number;
+          description: string | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          transaction_id: string;
+          account_id?: string | null;
+          category_id?: string | null;
+          amount: number;
+          description?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          transaction_id?: string;
+          account_id?: string | null;
+          category_id?: string | null;
+          amount?: number;
+          description?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transaction_splits_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaction_splits_category_id_fkey";
+            columns: ["category_id"];
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaction_splits_transaction_id_fkey";
+            columns: ["transaction_id"];
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

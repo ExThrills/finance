@@ -83,7 +83,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         `
         *,
         account:accounts!transactions_account_id_fkey(*),
-        category:categories!transactions_category_id_fkey(*)
+        category:categories!transactions_category_id_fkey(*),
+        splits:transaction_splits(
+          *,
+          account:accounts!transaction_splits_account_id_fkey(*),
+          category:categories!transaction_splits_category_id_fkey(*)
+        ),
+        tags:transaction_tags(tag:tags(*))
       `
       )
       .single();
@@ -92,7 +98,74 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       throw error;
     }
 
-    return NextResponse.json(toTransactionWithRelations(data as any));
+    if (parsed.data.splits !== undefined) {
+      const targetAmount = parsed.data.amount ?? existing.amount;
+      const sum = parsed.data.splits?.reduce((total, split) => total + split.amount, 0) ?? 0;
+      if (sum !== targetAmount) {
+        return NextResponse.json(
+          { error: "Sum of splits must equal total amount." },
+          { status: 400 }
+        );
+      }
+      await supabaseAdmin.from("transaction_splits").delete().eq("transaction_id", id);
+      if (parsed.data.splits.length) {
+        const splitPayloads = parsed.data.splits.map((split) => ({
+          transaction_id: id,
+          account_id: split.accountId ?? existing.account_id,
+          category_id: split.categoryId ?? null,
+          amount: split.amount,
+          description: split.description ?? null,
+          notes: split.notes ?? null,
+        }));
+        const { error: splitError } = await supabaseAdmin
+          .from("transaction_splits")
+          .insert(splitPayloads);
+        if (splitError) {
+          throw splitError;
+        }
+      }
+    }
+
+    if (parsed.data.tags !== undefined) {
+      await supabaseAdmin.from("transaction_tags").delete().eq("transaction_id", id);
+      if (parsed.data.tags.length) {
+        const tagPayloads = parsed.data.tags.map((tagId) => ({
+          transaction_id: id,
+          tag_id: tagId,
+        }));
+        const { error: tagError } = await supabaseAdmin
+          .from("transaction_tags")
+          .insert(tagPayloads);
+        if (tagError) {
+          throw tagError;
+        }
+      }
+    }
+
+    // re-fetch to hydrate splits/tags after changes
+    const { data: hydrated, error: hydrateError } = await supabaseAdmin
+      .from("transactions")
+      .select(
+        `
+        *,
+        account:accounts!transactions_account_id_fkey(*),
+        category:categories!transactions_category_id_fkey(*),
+        splits:transaction_splits(
+          *,
+          account:accounts!transaction_splits_account_id_fkey(*),
+          category:categories!transaction_splits_category_id_fkey(*)
+        ),
+        tags:transaction_tags(tag:tags(*))
+      `
+      )
+      .eq("id", id)
+      .single();
+
+    if (hydrateError || !hydrated) {
+      throw hydrateError ?? new Error("Failed to hydrate transaction");
+    }
+
+    return NextResponse.json(toTransactionWithRelations(hydrated as any));
   } catch (error) {
     console.error("PATCH /api/transactions/[id] failed", error);
     return NextResponse.json(

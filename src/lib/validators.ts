@@ -55,6 +55,18 @@ export const transactionSchema = z.object({
   transferId: z.string().min(1).nullable().optional(),
   recurringGroupKey: z.string().nullable().optional(),
   recurringConfidence: z.number().optional(),
+  splits: z
+    .array(
+      z.object({
+        accountId: z.string().optional(),
+        categoryId: z.string().nullable().optional(),
+        amount: z.number().int(),
+        description: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+      })
+    )
+    .optional(),
+  tags: z.array(z.string().min(1)).optional(),
 });
 
 export const transactionUpdateSchema = transactionSchema.partial();

@@ -26,7 +26,13 @@ export async function GET(request: Request) {
         `
         *,
         account:accounts!transactions_account_id_fkey(*),
-        category:categories!transactions_category_id_fkey(*)
+        category:categories!transactions_category_id_fkey(*),
+        splits:transaction_splits(
+          *,
+          account:accounts!transaction_splits_account_id_fkey(*),
+          category:categories!transaction_splits_category_id_fkey(*)
+        ),
+        tags:transaction_tags(tag:tags(*))
       `
       )
       .eq("user_id", userId)
@@ -82,6 +88,15 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    if (parsed.data.splits?.length) {
+      const sum = parsed.data.splits.reduce((total, split) => total + split.amount, 0);
+      if (sum !== parsed.data.amount) {
+        return NextResponse.json(
+          { error: "Sum of splits must equal total amount." },
+          { status: 400 }
+        );
+      }
+    }
     const { data, error } = await supabaseAdmin
       .from("transactions")
       .insert({
@@ -102,7 +117,13 @@ export async function POST(request: Request) {
         `
         *,
         account:accounts!transactions_account_id_fkey(*),
-        category:categories!transactions_category_id_fkey(*)
+        category:categories!transactions_category_id_fkey(*),
+        splits:transaction_splits(
+          *,
+          account:accounts!transaction_splits_account_id_fkey(*),
+          category:categories!transaction_splits_category_id_fkey(*)
+        ),
+        tags:transaction_tags(tag:tags(*))
       `
       )
       .single();
@@ -111,7 +132,61 @@ export async function POST(request: Request) {
       throw error;
     }
 
-    return NextResponse.json(toTransactionWithRelations(data as any));
+    if (parsed.data.splits?.length) {
+      const splitPayloads = parsed.data.splits.map((split) => ({
+        transaction_id: data.id,
+        account_id: split.accountId ?? parsed.data.accountId,
+        category_id: split.categoryId ?? null,
+        amount: split.amount,
+        description: split.description ?? null,
+        notes: split.notes ?? null,
+      }));
+      const { error: splitError } = await supabaseAdmin
+        .from("transaction_splits")
+        .insert(splitPayloads);
+      if (splitError) {
+        throw splitError;
+      }
+    }
+
+    if (parsed.data.tags?.length) {
+      const tagPayloads = parsed.data.tags.map((tagId) => ({
+        transaction_id: data.id,
+        tag_id: tagId,
+      }));
+      const { error: tagError } = await supabaseAdmin
+        .from("transaction_tags")
+        .insert(tagPayloads)
+        .select();
+      if (tagError) {
+        throw tagError;
+      }
+    }
+
+    // re-fetch with splits/tags populated
+    const { data: hydrated, error: hydrateError } = await supabaseAdmin
+      .from("transactions")
+      .select(
+        `
+        *,
+        account:accounts!transactions_account_id_fkey(*),
+        category:categories!transactions_category_id_fkey(*),
+        splits:transaction_splits(
+          *,
+          account:accounts!transaction_splits_account_id_fkey(*),
+          category:categories!transaction_splits_category_id_fkey(*)
+        ),
+        tags:transaction_tags(tag:tags(*))
+      `
+      )
+      .eq("id", data.id)
+      .single();
+
+    if (hydrateError || !hydrated) {
+      throw hydrateError ?? new Error("Failed to hydrate transaction");
+    }
+
+    return NextResponse.json(toTransactionWithRelations(hydrated as any));
   } catch (error) {
     console.error("POST /api/transactions failed", error);
     return NextResponse.json(

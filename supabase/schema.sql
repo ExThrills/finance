@@ -102,3 +102,35 @@ create table if not exists public.transaction_field_values (
 );
 create index if not exists idx_tfvs_transaction on public.transaction_field_values(transaction_id);
 create index if not exists idx_tfvs_definition on public.transaction_field_values(field_definition_id);
+
+create table if not exists public.tags (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now(),
+  constraint tags_unique_user_name unique (user_id, name)
+);
+create index if not exists idx_tags_user on public.tags(user_id);
+
+create table if not exists public.transaction_tags (
+  id uuid primary key default gen_random_uuid(),
+  transaction_id uuid not null references public.transactions(id) on delete cascade,
+  tag_id uuid not null references public.tags(id) on delete cascade,
+  constraint transaction_tags_unique unique (transaction_id, tag_id)
+);
+create index if not exists idx_transaction_tags_tx on public.transaction_tags(transaction_id);
+create index if not exists idx_transaction_tags_tag on public.transaction_tags(tag_id);
+
+create table if not exists public.transaction_splits (
+  id uuid primary key default gen_random_uuid(),
+  transaction_id uuid not null references public.transactions(id) on delete cascade,
+  account_id uuid references public.accounts(id) on delete set null,
+  category_id uuid references public.categories(id) on delete set null,
+  amount integer not null,
+  description text,
+  notes text,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_splits_tx on public.transaction_splits(transaction_id);
+create index if not exists idx_splits_account on public.transaction_splits(account_id);
+create index if not exists idx_splits_category on public.transaction_splits(category_id);
