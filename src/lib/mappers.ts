@@ -71,7 +71,7 @@ export function toFieldDefinition(
     id: row.id,
     userId: row.user_id,
     name: row.name,
-    fieldType: row.field_type,
+    fieldType: row.field_type as FieldDefinitionRecord["fieldType"],
     selectOptions: row.select_options,
     createdAt: row.created_at,
   };
