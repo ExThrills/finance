@@ -13,9 +13,9 @@
 - [x] API: splits/tags support on create/update; schema and seed updated. UI for splits/tags still pending.
 
 ## 3) Views, Filters, and Saved Searches
-- [ ] Filters: by account, account type (checking/savings/credit), institution, category, date, tags, pending/cleared.
-- [ ] Uncategorized inbox view to clear unassigned items fast.
-- [ ] Saved views with persistence (per user) for common slices (e.g., "Gas on Amex", "Travel on Checking").
+- [x] Filters: by account, account type (checking/savings/credit), institution, category, date, tags, pending/cleared.
+- [x] Uncategorized inbox view to clear unassigned items fast.
+- [x] Saved views with persistence (per user) for common slices (e.g., "Gas on Amex", "Travel on Checking").
 
 ## 4) Budgets & Alerts
 - [ ] Budgets: per category and per account/card with monthly/weekly periods; track actual vs target.
