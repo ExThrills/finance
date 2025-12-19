@@ -85,166 +85,6 @@ export type Database = {
           },
         ]
       }
-      categories: {
-        Row: {
-          created_at: string
-          id: string
-          kind: string
-          name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kind: string
-          name: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kind?: string
-          name?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "categories_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      field_definitions: {
-        Row: {
-          created_at: string
-          field_type: string
-          id: string
-          name: string
-          select_options: Json | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          field_type: string
-          id?: string
-          name: string
-          select_options?: Json | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          field_type?: string
-          id?: string
-          name?: string
-          select_options?: Json | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "field_definitions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      saved_views: {
-        Row: {
-          created_at: string
-          filters: Json
-          id: string
-          name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          filters?: Json
-          id?: string
-          name: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          filters?: Json
-          id?: string
-          name?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "saved_views_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      budgets: {
-        Row: {
-          account_id: string | null
-          category_id: string | null
-          created_at: string
-          id: string
-          name: string
-          period: string
-          scope_type: string
-          starts_on: string | null
-          target_amount: number
-          user_id: string
-        }
-        Insert: {
-          account_id?: string | null
-          category_id?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          period: string
-          scope_type: string
-          starts_on?: string | null
-          target_amount: number
-          user_id: string
-        }
-        Update: {
-          account_id?: string | null
-          category_id?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          period?: string
-          scope_type?: string
-          starts_on?: string | null
-          target_amount?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "budgets_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "budgets_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "budgets_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       alert_rules: {
         Row: {
           account_id: string | null
@@ -356,6 +196,166 @@ export type Database = {
           },
           {
             foreignKeyName: "alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budgets: {
+        Row: {
+          account_id: string | null
+          category_id: string | null
+          created_at: string
+          id: string
+          name: string
+          period: string
+          scope_type: string
+          starts_on: string | null
+          target_amount: number
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          period: string
+          scope_type: string
+          starts_on?: string | null
+          target_amount: number
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          period?: string
+          scope_type?: string
+          starts_on?: string | null
+          target_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_definitions: {
+        Row: {
+          created_at: string
+          field_type: string
+          id: string
+          name: string
+          select_options: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_type: string
+          id?: string
+          name: string
+          select_options?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          name?: string
+          select_options?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_definitions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_views: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_views_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
