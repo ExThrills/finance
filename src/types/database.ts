@@ -184,6 +184,35 @@ export type Database = {
           },
         ]
       }
+      tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tags_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transaction_field_values: {
         Row: {
           field_definition_id: string
@@ -222,6 +251,94 @@ export type Database = {
           },
           {
             foreignKeyName: "transaction_field_values_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transaction_splits: {
+        Row: {
+          account_id: string | null
+          amount: number
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          notes: string | null
+          transaction_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          transaction_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_splits_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_splits_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_splits_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transaction_tags: {
+        Row: {
+          id: string
+          tag_id: string
+          transaction_id: string
+        }
+        Insert: {
+          id?: string
+          tag_id: string
+          transaction_id: string
+        }
+        Update: {
+          id?: string
+          tag_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_tags_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
             referencedRelation: "transactions"
