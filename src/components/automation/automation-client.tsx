@@ -120,9 +120,12 @@ export function AutomationClient() {
     setActions((prev) => prev.filter((action) => action.id !== id));
   };
 
-  const updateAction = (id: string, patch: Partial<ActionDraft>) => {
+  const updateAction = (
+    id: string,
+    updater: (action: ActionDraft) => ActionDraft
+  ) => {
     setActions((prev) =>
-      prev.map((action) => (action.id === id ? { ...action, ...patch } : action))
+      prev.map((action) => (action.id === id ? updater(action) : action))
     );
   };
 
@@ -456,7 +459,11 @@ export function AutomationClient() {
                         <Select
                           value={action.categoryId}
                           onValueChange={(value) =>
-                            updateAction(action.id, { categoryId: value } as any)
+                            updateAction(action.id, (current) =>
+                              current.type === "set_category"
+                                ? { ...current, categoryId: value }
+                                : current
+                            )
                           }
                         >
                           <SelectTrigger className="mt-2">
@@ -475,7 +482,11 @@ export function AutomationClient() {
                         <Select
                           value={action.tagId}
                           onValueChange={(value) =>
-                            updateAction(action.id, { tagId: value } as any)
+                            updateAction(action.id, (current) =>
+                              current.type === "add_tag"
+                                ? { ...current, tagId: value }
+                                : current
+                            )
                           }
                         >
                           <SelectTrigger className="mt-2">
@@ -495,7 +506,11 @@ export function AutomationClient() {
                           className="mt-2"
                           value={action.note}
                           onChange={(event) =>
-                            updateAction(action.id, { note: event.target.value } as any)
+                            updateAction(action.id, (current) =>
+                              current.type === "set_note"
+                                ? { ...current, note: event.target.value }
+                                : current
+                            )
                           }
                           placeholder="Add a note"
                         />
