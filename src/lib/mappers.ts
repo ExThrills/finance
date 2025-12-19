@@ -8,6 +8,9 @@ import type {
   BudgetRecord,
   AlertRuleRecord,
   AlertRecord,
+  StatementPeriodRecord,
+  BalanceAdjustmentRecord,
+  AuditEventRecord,
   TransactionSplitRecord,
   TransactionFieldValueRecord,
   TransactionWithRelations,
@@ -115,6 +118,50 @@ export function toAlert(
     createdAt: row.created_at,
     acknowledgedAt: row.acknowledged_at,
     rule: row.rule ? toAlertRule(row.rule) : null,
+  };
+}
+
+export function toStatementPeriod(
+  row: Tables["statement_periods"]["Row"]
+): StatementPeriodRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    accountId: row.account_id,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    locked: row.locked,
+    reconciledAt: row.reconciled_at,
+    createdAt: row.created_at,
+  };
+}
+
+export function toBalanceAdjustment(
+  row: Tables["balance_adjustments"]["Row"]
+): BalanceAdjustmentRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    accountId: row.account_id,
+    amount: row.amount,
+    memo: row.memo,
+    effectiveDate: row.effective_date,
+    createdAt: row.created_at,
+  };
+}
+
+export function toAuditEvent(
+  row: Tables["audit_events"]["Row"]
+): AuditEventRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    actorId: row.actor_id,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    action: row.action,
+    metadata: (row.metadata as Record<string, unknown>) ?? null,
+    createdAt: row.created_at,
   };
 }
 

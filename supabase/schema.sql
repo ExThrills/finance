@@ -192,3 +192,42 @@ create table if not exists public.alerts (
 );
 create index if not exists idx_alerts_user on public.alerts(user_id);
 create index if not exists idx_alerts_rule on public.alerts(rule_id);
+
+create table if not exists public.statement_periods (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  account_id uuid not null references public.accounts(id) on delete cascade,
+  start_date date not null,
+  end_date date not null,
+  locked boolean not null default false,
+  reconciled_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_statement_periods_user on public.statement_periods(user_id);
+create index if not exists idx_statement_periods_account on public.statement_periods(account_id);
+create index if not exists idx_statement_periods_dates on public.statement_periods(start_date, end_date);
+
+create table if not exists public.balance_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  account_id uuid not null references public.accounts(id) on delete cascade,
+  amount integer not null,
+  memo text,
+  effective_date date not null default now(),
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_balance_adjustments_user on public.balance_adjustments(user_id);
+create index if not exists idx_balance_adjustments_account on public.balance_adjustments(account_id);
+
+create table if not exists public.audit_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  actor_id uuid references public.users(id) on delete set null,
+  entity_type text not null,
+  entity_id uuid,
+  action text not null,
+  metadata jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_audit_events_user on public.audit_events(user_id);
+create index if not exists idx_audit_events_entity on public.audit_events(entity_type, entity_id);

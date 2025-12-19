@@ -162,3 +162,41 @@ export type AlertRecord = {
   acknowledgedAt: string | null;
   rule?: AlertRuleRecord | null;
 };
+
+export type StatementPeriodRecord = {
+  id: string;
+  userId: string;
+  accountId: string;
+  startDate: string;
+  endDate: string;
+  locked: boolean;
+  reconciledAt: string | null;
+  createdAt: string;
+};
+
+export type StatementPeriodSummary = StatementPeriodRecord & {
+  pendingCount: number;
+  clearedCount: number;
+  totalCount: number;
+};
+
+export type BalanceAdjustmentRecord = {
+  id: string;
+  userId: string;
+  accountId: string;
+  amount: number;
+  memo: string | null;
+  effectiveDate: string;
+  createdAt: string;
+};
+
+export type AuditEventRecord = {
+  id: string;
+  userId: string;
+  actorId: string | null;
+  entityType: string;
+  entityId: string | null;
+  action: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+};

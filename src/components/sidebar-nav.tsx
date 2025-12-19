@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   ClipboardList,
+  ClipboardCheck,
   Landmark,
   Layers,
   ShieldAlert,
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/categories", label: "Categories", icon: Layers },
   { href: "/budgets", label: "Budgets", icon: Wallet },
   { href: "/alerts", label: "Alerts", icon: ShieldAlert },
+  { href: "/reconciliation", label: "Reconciliation", icon: ClipboardCheck },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

@@ -23,9 +23,9 @@
 - [x] Credit utilization: compute per-card and aggregate; surface warnings.
 
 ## 5) Reconciliation & Controls
-- [ ] Statement periods per account; reconciliation checklist for pending vs cleared vs statement items.
-- [ ] Lock reconciled periods; audit log for edits (who/when/what changed).
-- [ ] Manual balance adjustments with memo + audit trail.
+- [x] Statement periods per account; reconciliation checklist for pending vs cleared vs statement items.
+- [x] Lock reconciled periods; audit log for edits (who/when/what changed).
+- [x] Manual balance adjustments with memo + audit trail.
 
 ## 6) Balances, Sync, and Health
 - [ ] Balance service: poll/sync balances (placeholder/manual now; Plaid/Supabase functions later); store staleness timestamps.

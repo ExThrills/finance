@@ -4,6 +4,7 @@ import { getCurrentUserId } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/db";
 import { toTransactionWithRelations } from "@/lib/mappers";
 import { transactionSchema } from "@/lib/validators";
+import { logAuditEvent } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,26 @@ export async function POST(request: Request) {
         );
       }
     }
+
+    const transactionDate = toDateString(parsed.data.date);
+    const { data: lockedPeriod, error: lockError } = await supabaseAdmin
+      .from("statement_periods")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("account_id", parsed.data.accountId)
+      .eq("locked", true)
+      .lte("start_date", transactionDate)
+      .gte("end_date", transactionDate)
+      .maybeSingle();
+    if (lockError) {
+      throw lockError;
+    }
+    if (lockedPeriod) {
+      return NextResponse.json(
+        { error: "This statement period is locked." },
+        { status: 403 }
+      );
+    }
     const { data, error } = await supabaseAdmin
       .from("transactions")
       .insert({
@@ -104,7 +125,7 @@ export async function POST(request: Request) {
         account_id: parsed.data.accountId,
         category_id: parsed.data.categoryId ?? null,
         amount: parsed.data.amount,
-        date: toDateString(parsed.data.date),
+        date: transactionDate,
         description: parsed.data.description,
         notes: parsed.data.notes ?? null,
         is_pending: parsed.data.isPending ?? false,
@@ -185,6 +206,19 @@ export async function POST(request: Request) {
     if (hydrateError || !hydrated) {
       throw hydrateError ?? new Error("Failed to hydrate transaction");
     }
+
+    await logAuditEvent({
+      userId,
+      actorId: userId,
+      entityType: "transaction",
+      entityId: data.id,
+      action: "create",
+      metadata: {
+        accountId: parsed.data.accountId,
+        amount: parsed.data.amount,
+        date: transactionDate,
+      },
+    });
 
     return NextResponse.json(toTransactionWithRelations(hydrated as any));
   } catch (error) {

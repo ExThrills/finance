@@ -145,3 +145,20 @@ export const alertRuleSchema = z.object({
 });
 
 export const alertRuleUpdateSchema = alertRuleSchema.partial();
+
+export const statementPeriodSchema = z.object({
+  accountId: z.string().min(1),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+});
+
+export const statementPeriodUpdateSchema = z.object({
+  locked: z.boolean().optional(),
+});
+
+export const balanceAdjustmentSchema = z.object({
+  accountId: z.string().min(1),
+  amount: z.number().int(),
+  memo: z.string().nullable().optional(),
+  effectiveDate: z.coerce.date().optional(),
+});

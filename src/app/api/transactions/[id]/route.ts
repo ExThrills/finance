@@ -4,6 +4,7 @@ import { getCurrentUserId } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/db";
 import { toTransactionWithRelations } from "@/lib/mappers";
 import { transactionUpdateSchema } from "@/lib/validators";
+import { logAuditEvent } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,37 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return NextResponse.json(
         { error: "Transaction not found." },
         { status: 404 }
+      );
+    }
+
+    const nextAccountId =
+      parsed.data.accountId !== undefined
+        ? parsed.data.accountId
+        : existing.account_id;
+    const nextDate =
+      parsed.data.date !== undefined
+        ? parsed.data.date instanceof Date
+          ? parsed.data.date.toISOString().slice(0, 10)
+          : new Date(parsed.data.date).toISOString().slice(0, 10)
+        : existing.date;
+
+    const { data: lockedPeriod, error: lockError } = await supabaseAdmin
+      .from("statement_periods")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("account_id", nextAccountId)
+      .eq("locked", true)
+      .lte("start_date", nextDate)
+      .gte("end_date", nextDate)
+      .maybeSingle();
+
+    if (lockError) {
+      throw lockError;
+    }
+    if (lockedPeriod) {
+      return NextResponse.json(
+        { error: "This statement period is locked." },
+        { status: 403 }
       );
     }
 
@@ -165,6 +197,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       throw hydrateError ?? new Error("Failed to hydrate transaction");
     }
 
+    if (Object.keys(patch).length || parsed.data.splits || parsed.data.tags) {
+      await logAuditEvent({
+        userId,
+        actorId: userId,
+        entityType: "transaction",
+        entityId: id,
+        action: "update",
+        metadata: {
+          patch,
+          splitsUpdated: parsed.data.splits !== undefined,
+          tagsUpdated: parsed.data.tags !== undefined,
+        },
+      });
+    }
+
     return NextResponse.json(toTransactionWithRelations(hydrated as any));
   } catch (error) {
     console.error("PATCH /api/transactions/[id] failed", error);
@@ -179,9 +226,9 @@ export async function DELETE(_: NextRequest, { params }: Params) {
   const { id } = await params;
   try {
     const userId = await getCurrentUserId();
-    const { error: findError } = await supabaseAdmin
+    const { data: existing, error: findError } = await supabaseAdmin
       .from("transactions")
-      .select("id")
+      .select("id, account_id, date")
       .eq("id", id)
       .eq("user_id", userId)
       .single();
@@ -189,6 +236,26 @@ export async function DELETE(_: NextRequest, { params }: Params) {
       return NextResponse.json(
         { error: "Transaction not found." },
         { status: 404 }
+      );
+    }
+
+    const { data: lockedPeriod, error: lockError } = await supabaseAdmin
+      .from("statement_periods")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("account_id", existing.account_id)
+      .eq("locked", true)
+      .lte("start_date", existing.date)
+      .gte("end_date", existing.date)
+      .maybeSingle();
+
+    if (lockError) {
+      throw lockError;
+    }
+    if (lockedPeriod) {
+      return NextResponse.json(
+        { error: "This statement period is locked." },
+        { status: 403 }
       );
     }
 
@@ -200,6 +267,14 @@ export async function DELETE(_: NextRequest, { params }: Params) {
     if (error) {
       throw error;
     }
+
+    await logAuditEvent({
+      userId,
+      actorId: userId,
+      entityType: "transaction",
+      entityId: id,
+      action: "delete",
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
