@@ -88,7 +88,7 @@ export const transferSchema = z.object({
 
 export const savedViewSchema = z.object({
   name: z.string().min(1),
-  filters: z.record(z.any()),
+  filters: z.record(z.string(), z.any()),
 });
 
 export const savedViewUpdateSchema = savedViewSchema.partial();
