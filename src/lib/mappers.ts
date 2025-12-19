@@ -40,7 +40,7 @@ export function toCategory(row: Tables["categories"]["Row"]): CategoryRecord {
     id: row.id,
     userId: row.user_id,
     name: row.name,
-    kind: row.kind,
+    kind: row.kind as CategoryRecord["kind"],
     createdAt: row.created_at,
   };
 }
