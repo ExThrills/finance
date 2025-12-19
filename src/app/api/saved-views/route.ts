@@ -4,6 +4,9 @@ import { getCurrentUserId } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/db";
 import { toSavedView } from "@/lib/mappers";
 import { savedViewSchema } from "@/lib/validators";
+import type { Database } from "@/types/database";
+
+type SavedViewFilters = Database["public"]["Tables"]["saved_views"]["Row"]["filters"];
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +50,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: userId,
         name: parsed.data.name,
-        filters: parsed.data.filters,
+        filters: parsed.data.filters as SavedViewFilters,
       })
       .select()
       .single();
