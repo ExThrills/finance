@@ -4,6 +4,9 @@ import { getCurrentUserId } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/db";
 import { toSavedView } from "@/lib/mappers";
 import { savedViewUpdateSchema } from "@/lib/validators";
+import type { Database } from "@/types/database";
+
+type SavedViewFilters = Database["public"]["Tables"]["saved_views"]["Row"]["filters"];
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +42,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .from("saved_views")
       .update({
         name: parsed.data.name ?? existing.name,
-        filters: parsed.data.filters ?? existing.filters,
+        filters: (parsed.data.filters ?? existing.filters) as SavedViewFilters,
       })
       .eq("id", id)
       .select()
