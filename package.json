@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "tsx scripts/seed-supabase.ts"
+    "db:seed": "tsx scripts/seed-supabase.ts",
+    "export:transactions": "tsx scripts/export-transactions.ts",
+    "test:e2e": "node --test tests/e2e/*.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

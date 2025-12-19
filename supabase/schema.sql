@@ -78,6 +78,8 @@ create index if not exists idx_transactions_user on public.transactions(user_id)
 create index if not exists idx_transactions_account on public.transactions(account_id);
 create index if not exists idx_transactions_category on public.transactions(category_id);
 create index if not exists idx_transactions_date on public.transactions(date);
+create index if not exists idx_transactions_account_date on public.transactions(account_id, date);
+create index if not exists idx_transactions_user_date on public.transactions(user_id, date);
 
 create table if not exists public.field_definitions (
   id uuid primary key default gen_random_uuid(),

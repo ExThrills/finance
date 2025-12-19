@@ -48,6 +48,6 @@
 - [x] Transaction table polish: batch actions, quick filters, inline category/account edits.
 
 ## 10) QA & Ops
-- [ ] Add end-to-end tests for transaction creation (account required), transfers, reconciliations, budgets, and alerts.
-- [ ] Load test critical queries (transactions by account/date) and add indexes if needed.
-- [ ] Backups/exports: CSV/Parquet per account/category/date; scheduled exports to storage.
+- [x] Add end-to-end tests for transaction creation (account required), transfers, reconciliations, budgets, and alerts.
+- [x] Load test critical queries (transactions by account/date) and add indexes if needed.
+- [x] Backups/exports: CSV/Parquet per account/category/date; scheduled exports to storage.
