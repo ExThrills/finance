@@ -43,6 +43,12 @@ export const categorySchema = z.object({
 
 export const categoryUpdateSchema = categorySchema.partial();
 
+export const tagSchema = z.object({
+  name: z.string().min(1),
+});
+
+export const tagUpdateSchema = tagSchema.partial();
+
 export const transactionSchema = z.object({
   accountId: z.string().min(1),
   categoryId: z.string().nullable().optional(),
@@ -79,6 +85,13 @@ export const transferSchema = z.object({
   memo: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
 });
+
+export const savedViewSchema = z.object({
+  name: z.string().min(1),
+  filters: z.record(z.any()),
+});
+
+export const savedViewUpdateSchema = savedViewSchema.partial();
 
 export const fieldDefinitionSchema = z.object({
   name: z.string().min(1),

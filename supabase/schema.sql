@@ -134,3 +134,13 @@ create table if not exists public.transaction_splits (
 create index if not exists idx_splits_tx on public.transaction_splits(transaction_id);
 create index if not exists idx_splits_account on public.transaction_splits(account_id);
 create index if not exists idx_splits_category on public.transaction_splits(category_id);
+
+create table if not exists public.saved_views (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  name text not null,
+  filters jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  constraint saved_views_unique_user_name unique (user_id, name)
+);
+create index if not exists idx_saved_views_user on public.saved_views(user_id);

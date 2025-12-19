@@ -10,18 +10,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { AccountRecord, CategoryRecord } from "@/types/finance";
+import type { AccountRecord, CategoryRecord, TagRecord } from "@/types/finance";
 
 type Filters = {
   startDate: string;
   endDate: string;
   accountId: string;
+  accountType: string;
+  institution: string;
   categoryId: string;
+  tagId: string;
+  status: "all" | "pending" | "cleared";
 };
 
 type Props = {
   accounts: AccountRecord[];
   categories: CategoryRecord[];
+  tags: TagRecord[];
+  accountTypes: string[];
+  institutions: string[];
   filters: Filters;
   onChange: (filters: Filters) => void;
 };
@@ -29,12 +36,15 @@ type Props = {
 export function TransactionsFilters({
   accounts,
   categories,
+  tags,
+  accountTypes,
+  institutions,
   filters,
   onChange,
 }: Props) {
   return (
     <div className="rounded-2xl border bg-muted/20 p-4">
-      <div className="grid gap-3 lg:grid-cols-[repeat(4,_minmax(0,_1fr))_auto]">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-1">
           <Label htmlFor="start-date">Start date</Label>
           <Input
@@ -79,6 +89,27 @@ export function TransactionsFilters({
           </Select>
         </div>
         <div className="space-y-1">
+          <Label>Account type</Label>
+          <Select
+            value={filters.accountType || "all"}
+            onValueChange={(value) =>
+              onChange({ ...filters, accountType: value === "all" ? "" : value })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {accountTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
           <Label>Category</Label>
           <Select
             value={filters.categoryId || "all"}
@@ -100,6 +131,72 @@ export function TransactionsFilters({
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1">
+          <Label>Institution</Label>
+          <Select
+            value={filters.institution || "all"}
+            onValueChange={(value) =>
+              onChange({
+                ...filters,
+                institution: value === "all" ? "" : value,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All institutions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All institutions</SelectItem>
+              {institutions.map((institution) => (
+                <SelectItem key={institution} value={institution}>
+                  {institution === "unknown" ? "Unassigned" : institution}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label>Tag</Label>
+          <Select
+            value={filters.tagId || "all"}
+            onValueChange={(value) =>
+              onChange({ ...filters, tagId: value === "all" ? "" : value })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All tags" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tags</SelectItem>
+              {tags.map((tag) => (
+                <SelectItem key={tag.id} value={tag.id}>
+                  {tag.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label>Status</Label>
+          <Select
+            value={filters.status}
+            onValueChange={(value) =>
+              onChange({
+                ...filters,
+                status: value as Filters["status"],
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="cleared">Cleared</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-end">
           <Button
             type="button"
@@ -109,7 +206,11 @@ export function TransactionsFilters({
                 startDate: "",
                 endDate: "",
                 accountId: "",
+                accountType: "",
+                institution: "",
                 categoryId: "",
+                tagId: "",
+                status: "all",
               })
             }
           >

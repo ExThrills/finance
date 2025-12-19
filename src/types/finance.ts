@@ -90,6 +90,14 @@ export type TransactionWithRelations = TransactionRecord & {
   tags?: TagRecord[];
 };
 
+export type SavedViewRecord = {
+  id: string;
+  userId: string;
+  name: string;
+  filters: Record<string, unknown>;
+  createdAt: string;
+};
+
 export type TransferRecord = {
   id: string;
   userId: string;

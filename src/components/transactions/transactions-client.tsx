@@ -8,8 +8,29 @@ import { formatDateInput } from "@/lib/format";
 import type {
   AccountRecord,
   CategoryRecord,
+  SavedViewRecord,
+  TagRecord,
   TransactionWithRelations,
 } from "@/types/finance";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { QuickAddTransaction } from "@/components/transactions/quick-add-transaction";
 import { TransactionsFilters } from "@/components/transactions/transactions-filters";
 import { TransactionsTable } from "@/components/transactions/transactions-table";
@@ -18,22 +39,70 @@ type Filters = {
   startDate: string;
   endDate: string;
   accountId: string;
+  accountType: string;
+  institution: string;
   categoryId: string;
+  tagId: string;
+  status: "all" | "pending" | "cleared";
 };
 
 const defaultFilters: Filters = {
   startDate: "",
   endDate: "",
   accountId: "",
+  accountType: "",
+  institution: "",
   categoryId: "",
+  tagId: "",
+  status: "all",
 };
+
+const normalizeFilters = (raw?: Record<string, unknown>): Filters => ({
+  startDate: typeof raw?.startDate === "string" ? raw.startDate : "",
+  endDate: typeof raw?.endDate === "string" ? raw.endDate : "",
+  accountId: typeof raw?.accountId === "string" ? raw.accountId : "",
+  accountType: typeof raw?.accountType === "string" ? raw.accountType : "",
+  institution: typeof raw?.institution === "string" ? raw.institution : "",
+  categoryId: typeof raw?.categoryId === "string" ? raw.categoryId : "",
+  tagId: typeof raw?.tagId === "string" ? raw.tagId : "",
+  status:
+    raw?.status === "pending" || raw?.status === "cleared" ? raw.status : "all",
+});
 
 export function TransactionsClient() {
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>([]);
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [tags, setTags] = useState<TagRecord[]>([]);
+  const [savedViews, setSavedViews] = useState<SavedViewRecord[]>([]);
+  const [activeViewId, setActiveViewId] = useState("");
+  const [viewName, setViewName] = useState("");
+  const [saveOpen, setSaveOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [loading, setLoading] = useState(true);
+
+  const accountById = useMemo(
+    () => new Map(accounts.map((account) => [account.id, account])),
+    [accounts]
+  );
+
+  const accountTypes = useMemo(() => {
+    const set = new Set<string>();
+    accounts.forEach((account) => set.add(account.type));
+    return Array.from(set).sort();
+  }, [accounts]);
+
+  const institutions = useMemo(() => {
+    const set = new Set<string>();
+    accounts.forEach((account) => {
+      if (account.institution && account.institution.trim()) {
+        set.add(account.institution);
+      } else {
+        set.add("unknown");
+      }
+    });
+    return Array.from(set).sort();
+  }, [accounts]);
 
   const filteredTransactions = useMemo(() => {
     const start = filters.startDate ? new Date(filters.startDate) : null;
@@ -49,6 +118,22 @@ export function TransactionsClient() {
       if (filters.accountId && tx.accountId !== filters.accountId) {
         return false;
       }
+      if (filters.accountType) {
+        const account = accountById.get(tx.accountId);
+        if (!account || account.type !== filters.accountType) {
+          return false;
+        }
+      }
+      if (filters.institution) {
+        const account = accountById.get(tx.accountId);
+        const institution =
+          account?.institution && account.institution.trim()
+            ? account.institution
+            : "unknown";
+        if (institution !== filters.institution) {
+          return false;
+        }
+      }
       if (filters.categoryId) {
         if (filters.categoryId === "uncategorized") {
           if (tx.categoryId) {
@@ -58,6 +143,17 @@ export function TransactionsClient() {
           return false;
         }
       }
+      if (filters.tagId) {
+        if (!tx.tags?.some((tag) => tag.id === filters.tagId)) {
+          return false;
+        }
+      }
+      if (filters.status === "pending" && !tx.isPending) {
+        return false;
+      }
+      if (filters.status === "cleared" && tx.isPending) {
+        return false;
+      }
       if (start && new Date(tx.date) < start) {
         return false;
       }
@@ -66,20 +162,36 @@ export function TransactionsClient() {
       }
       return true;
     });
-  }, [transactions, filters]);
+  }, [transactions, filters, accountById]);
+
+  const inboxCount = useMemo(
+    () => transactions.filter((tx) => !tx.categoryId).length,
+    [transactions]
+  );
+
+  const activeView = savedViews.find((view) => view.id === activeViewId) ?? null;
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [accountsData, categoriesData, transactionsData] =
-          await Promise.all([
-            fetchJson<AccountRecord[]>("/api/accounts"),
-            fetchJson<CategoryRecord[]>("/api/categories"),
-            fetchJson<TransactionWithRelations[]>("/api/transactions"),
-          ]);
+        const [
+          accountsData,
+          categoriesData,
+          transactionsData,
+          tagsData,
+          savedViewsData,
+        ] = await Promise.all([
+          fetchJson<AccountRecord[]>("/api/accounts"),
+          fetchJson<CategoryRecord[]>("/api/categories"),
+          fetchJson<TransactionWithRelations[]>("/api/transactions"),
+          fetchJson<TagRecord[]>("/api/tags"),
+          fetchJson<SavedViewRecord[]>("/api/saved-views"),
+        ]);
         setAccounts(accountsData);
         setCategories(categoriesData);
         setTransactions(transactionsData);
+        setTags(tagsData);
+        setSavedViews(savedViewsData);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Failed to load data.";
@@ -104,6 +216,92 @@ export function TransactionsClient() {
 
   const handleDeleted = (id: string) => {
     setTransactions((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const applyInboxFilters = () => {
+    setActiveViewId("");
+    setFilters({
+      ...defaultFilters,
+      categoryId: "uncategorized",
+    });
+  };
+
+  const applySavedView = (viewId: string) => {
+    if (!viewId || viewId === "none") {
+      setActiveViewId("");
+      return;
+    }
+    const view = savedViews.find((item) => item.id === viewId);
+    if (!view) {
+      return;
+    }
+    setActiveViewId(viewId);
+    setFilters(normalizeFilters(view.filters));
+  };
+
+  const handleSaveView = async () => {
+    if (!viewName.trim()) {
+      toast.error("Name your saved view.");
+      return;
+    }
+    try {
+      const created = await fetchJson<SavedViewRecord>("/api/saved-views", {
+        method: "POST",
+        body: JSON.stringify({ name: viewName.trim(), filters }),
+      });
+      setSavedViews((prev) => [created, ...prev]);
+      setActiveViewId(created.id);
+      setViewName("");
+      setSaveOpen(false);
+      toast.success("Saved view created.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save view.";
+      toast.error(message);
+    }
+  };
+
+  const handleUpdateView = async () => {
+    if (!activeViewId) {
+      toast.error("Select a saved view first.");
+      return;
+    }
+    try {
+      const updated = await fetchJson<SavedViewRecord>(
+        `/api/saved-views/${activeViewId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ filters }),
+        }
+      );
+      setSavedViews((prev) =>
+        prev.map((view) => (view.id === updated.id ? updated : view))
+      );
+      toast.success("Saved view updated.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update view.";
+      toast.error(message);
+    }
+  };
+
+  const handleDeleteView = async () => {
+    if (!activeViewId) {
+      toast.error("Select a saved view first.");
+      return;
+    }
+    try {
+      await fetchJson(`/api/saved-views/${activeViewId}`, { method: "DELETE" });
+      setSavedViews((prev) =>
+        prev.filter((view) => view.id !== activeViewId)
+      );
+      setActiveViewId("");
+      toast.success("Saved view deleted.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to delete view.";
+      toast.error(message);
+    }
   };
 
   const handleQuickAdd = async (payload: {
@@ -209,11 +407,95 @@ export function TransactionsClient() {
         />
       </div>
 
+      <div className="rounded-2xl border bg-muted/20 p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-[220px] space-y-1">
+            <Label>Saved views</Label>
+            <Select value={activeViewId || "none"} onValueChange={applySavedView}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a saved view" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No saved view</SelectItem>
+                {savedViews.map((view) => (
+                  <SelectItem key={view.id} value={view.id}>
+                    {view.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="outline">
+                  Save current view
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Save filters as a view</DialogTitle>
+                  <DialogDescription>
+                    Name this filter set so you can jump back to it later.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2">
+                  <Label htmlFor="view-name">View name</Label>
+                  <Input
+                    id="view-name"
+                    value={viewName}
+                    onChange={(event) => setViewName(event.target.value)}
+                    placeholder="e.g. Gas on Amex"
+                  />
+                </div>
+                <DialogFooter>
+                  <Button type="button" onClick={handleSaveView}>
+                    Save view
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleUpdateView}
+              disabled={!activeView}
+            >
+              Update view
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleDeleteView}
+              disabled={!activeView}
+            >
+              Delete view
+            </Button>
+          </div>
+          <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Inbox</span>
+            <Button
+              type="button"
+              variant={filters.categoryId === "uncategorized" ? "default" : "outline"}
+              onClick={applyInboxFilters}
+            >
+              Uncategorized ({inboxCount})
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <TransactionsFilters
         accounts={accounts}
         categories={categories}
+        tags={tags}
+        accountTypes={accountTypes}
+        institutions={institutions}
         filters={filters}
-        onChange={setFilters}
+        onChange={(next) => {
+          setActiveViewId("");
+          setFilters(next);
+        }}
       />
 
       <TransactionsTable

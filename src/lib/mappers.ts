@@ -4,6 +4,7 @@ import type {
   CategoryRecord,
   FieldDefinitionRecord,
   TagRecord,
+  SavedViewRecord,
   TransactionSplitRecord,
   TransactionFieldValueRecord,
   TransactionWithRelations,
@@ -40,6 +41,25 @@ export function toCategory(row: Tables["categories"]["Row"]): CategoryRecord {
     userId: row.user_id,
     name: row.name,
     kind: row.kind,
+    createdAt: row.created_at,
+  };
+}
+
+export function toTag(row: Tables["tags"]["Row"]): TagRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    createdAt: row.created_at,
+  };
+}
+
+export function toSavedView(row: Tables["saved_views"]["Row"]): SavedViewRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    filters: (row.filters as Record<string, unknown>) ?? {},
     createdAt: row.created_at,
   };
 }
