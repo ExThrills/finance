@@ -231,3 +231,18 @@ create table if not exists public.audit_events (
 );
 create index if not exists idx_audit_events_user on public.audit_events(user_id);
 create index if not exists idx_audit_events_entity on public.audit_events(entity_type, entity_id);
+
+create table if not exists public.recurring_series (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  account_id uuid not null references public.accounts(id) on delete cascade,
+  category_id uuid references public.categories(id) on delete set null,
+  description text not null,
+  amount integer not null,
+  cadence text not null check (cadence in ('weekly','monthly')),
+  next_date date not null,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_recurring_series_user on public.recurring_series(user_id);
+create index if not exists idx_recurring_series_account on public.recurring_series(account_id);

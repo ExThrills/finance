@@ -33,9 +33,9 @@
 - [x] Connector health badges (last success, errors, MFA required).
 
 ## 7) Cash Flow & Projections
-- [ ] Recurring detection (simple heuristic) and recurring model storage.
-- [ ] Projected cash curve combining recurring inflows/outflows, due dates, card payments.
-- [ ] What-if simulator for payoff strategies (e.g., avalanche vs snowball) and transfer impacts.
+- [x] Recurring detection (simple heuristic) and recurring model storage.
+- [x] Projected cash curve combining recurring inflows/outflows, due dates, card payments.
+- [x] What-if simulator for payoff strategies (e.g., avalanche vs snowball) and transfer impacts.
 
 ## 8) Automation & Rules
 - [ ] Rule engine: if/then on merchant/MCC/amount/account to set category/tags/notes/splits.

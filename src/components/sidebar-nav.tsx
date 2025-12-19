@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   Landmark,
   Layers,
+  LineChart,
   ShieldAlert,
   Wallet,
   Settings,
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/budgets", label: "Budgets", icon: Wallet },
   { href: "/alerts", label: "Alerts", icon: ShieldAlert },
   { href: "/reconciliation", label: "Reconciliation", icon: ClipboardCheck },
+  { href: "/projections", label: "Projections", icon: LineChart },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

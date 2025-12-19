@@ -200,3 +200,38 @@ export type AuditEventRecord = {
   metadata: Record<string, unknown> | null;
   createdAt: string;
 };
+
+export type RecurringSeriesRecord = {
+  id: string;
+  userId: string;
+  accountId: string;
+  categoryId: string | null;
+  description: string;
+  amount: number;
+  cadence: "weekly" | "monthly";
+  nextDate: string;
+  active: boolean;
+  createdAt: string;
+};
+
+export type ProjectionPoint = {
+  date: string;
+  balance: number;
+};
+
+export type RecurringSuggestion = {
+  accountId: string;
+  categoryId: string | null;
+  description: string;
+  amount: number;
+  cadence: "weekly" | "monthly";
+  nextDate: string;
+  count: number;
+};
+
+export type PayoffPlan = {
+  strategy: "avalanche" | "snowball";
+  months: number;
+  totalInterest: number;
+  schedule: { month: number; balance: number }[];
+};

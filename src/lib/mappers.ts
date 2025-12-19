@@ -11,6 +11,7 @@ import type {
   StatementPeriodRecord,
   BalanceAdjustmentRecord,
   AuditEventRecord,
+  RecurringSeriesRecord,
   TransactionSplitRecord,
   TransactionFieldValueRecord,
   TransactionWithRelations,
@@ -161,6 +162,23 @@ export function toAuditEvent(
     entityId: row.entity_id,
     action: row.action,
     metadata: (row.metadata as Record<string, unknown>) ?? null,
+    createdAt: row.created_at,
+  };
+}
+
+export function toRecurringSeries(
+  row: Tables["recurring_series"]["Row"]
+): RecurringSeriesRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    accountId: row.account_id,
+    categoryId: row.category_id,
+    description: row.description,
+    amount: row.amount,
+    cadence: row.cadence as RecurringSeriesRecord["cadence"],
+    nextDate: row.next_date,
+    active: row.active,
     createdAt: row.created_at,
   };
 }

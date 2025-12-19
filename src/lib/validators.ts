@@ -162,3 +162,15 @@ export const balanceAdjustmentSchema = z.object({
   memo: z.string().nullable().optional(),
   effectiveDate: z.coerce.date().optional(),
 });
+
+export const recurringSeriesSchema = z.object({
+  accountId: z.string().min(1),
+  categoryId: z.string().nullable().optional(),
+  description: z.string().min(1),
+  amount: z.number().int(),
+  cadence: z.enum(["weekly", "monthly"]),
+  nextDate: z.coerce.date(),
+  active: z.boolean().optional(),
+});
+
+export const recurringSeriesUpdateSchema = recurringSeriesSchema.partial();
