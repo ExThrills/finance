@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/db";
-import type { Database } from "@/types/database";
+import type { Database, Json } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
 type AlertRuleRow = Database["public"]["Tables"]["alert_rules"]["Row"];
-type Json = Database["public"]["Types"]["Json"];
 
 const toDateString = (date: Date) => date.toISOString().slice(0, 10);
 
