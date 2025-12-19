@@ -7,6 +7,7 @@ import type { Database } from "@/types/database";
 export const dynamic = "force-dynamic";
 
 type AlertRuleRow = Database["public"]["Tables"]["alert_rules"]["Row"];
+type Json = Database["public"]["Types"]["Json"];
 
 const toDateString = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -98,7 +99,7 @@ export async function POST() {
     const alertsToCreate: {
       rule_id: string | null;
       message: string;
-      payload: Record<string, unknown>;
+      payload: Json;
       channel: AlertRuleRow["channel"];
       webhookUrl: string | null;
     }[] = [];
@@ -122,7 +123,7 @@ export async function POST() {
       alertsToCreate.push({
         rule_id: rule.id,
         message,
-        payload,
+        payload: payload as Json,
         channel: rule.channel,
         webhookUrl: rule.webhook_url,
       });
@@ -288,7 +289,7 @@ export async function POST() {
           user_id: userId,
           rule_id: alert.rule_id,
           message: alert.message,
-          payload: alert.payload,
+          payload: alert.payload as Json,
         }))
       );
 
