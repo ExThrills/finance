@@ -109,3 +109,56 @@ export type TransferRecord = {
   createdAt: string;
   transferGroupId: string | null;
 };
+
+export type BudgetRecord = {
+  id: string;
+  userId: string;
+  name: string;
+  scopeType: "category" | "account";
+  categoryId: string | null;
+  accountId: string | null;
+  period: "monthly" | "weekly";
+  targetAmount: number;
+  startsOn: string | null;
+  createdAt: string;
+};
+
+export type BudgetWithActuals = BudgetRecord & {
+  actualAmount: number;
+  periodStart: string;
+  periodEnd: string;
+  percentUsed: number;
+};
+
+export type AlertRuleRecord = {
+  id: string;
+  userId: string;
+  name: string;
+  ruleType:
+    | "low_cash"
+    | "high_utilization"
+    | "unusual_spend"
+    | "large_tx"
+    | "missed_sync";
+  severity: "low" | "medium" | "high";
+  channel: "in_app" | "webhook" | "email";
+  enabled: boolean;
+  thresholdAmount: number | null;
+  thresholdPercent: number | null;
+  lookbackDays: number | null;
+  accountId: string | null;
+  categoryId: string | null;
+  webhookUrl: string | null;
+  createdAt: string;
+};
+
+export type AlertRecord = {
+  id: string;
+  userId: string;
+  ruleId: string | null;
+  message: string;
+  payload: Record<string, unknown> | null;
+  createdAt: string;
+  acknowledgedAt: string | null;
+  rule?: AlertRuleRecord | null;
+};

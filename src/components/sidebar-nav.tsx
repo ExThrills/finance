@@ -7,6 +7,8 @@ import {
   ClipboardList,
   Landmark,
   Layers,
+  ShieldAlert,
+  Wallet,
   Settings,
 } from "lucide-react";
 
@@ -17,6 +19,8 @@ const navItems = [
   { href: "/transactions", label: "Transactions", icon: ClipboardList },
   { href: "/accounts", label: "Accounts", icon: Landmark },
   { href: "/categories", label: "Categories", icon: Layers },
+  { href: "/budgets", label: "Budgets", icon: Wallet },
+  { href: "/alerts", label: "Alerts", icon: ShieldAlert },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

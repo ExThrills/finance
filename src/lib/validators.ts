@@ -111,3 +111,37 @@ export const fieldValueSchema = z.object({
 });
 
 export const fieldValueUpdateSchema = fieldValueSchema.partial();
+
+export const budgetSchema = z.object({
+  name: z.string().min(1),
+  scopeType: z.enum(["category", "account"]),
+  categoryId: z.string().nullable().optional(),
+  accountId: z.string().nullable().optional(),
+  period: z.enum(["monthly", "weekly"]),
+  targetAmount: z.number().int().positive(),
+  startsOn: z.coerce.date().nullable().optional(),
+});
+
+export const budgetUpdateSchema = budgetSchema.partial();
+
+export const alertRuleSchema = z.object({
+  name: z.string().min(1),
+  ruleType: z.enum([
+    "low_cash",
+    "high_utilization",
+    "unusual_spend",
+    "large_tx",
+    "missed_sync",
+  ]),
+  severity: z.enum(["low", "medium", "high"]).optional(),
+  channel: z.enum(["in_app", "webhook", "email"]).optional(),
+  enabled: z.boolean().optional(),
+  thresholdAmount: z.number().int().positive().nullable().optional(),
+  thresholdPercent: z.number().positive().nullable().optional(),
+  lookbackDays: z.number().int().positive().nullable().optional(),
+  accountId: z.string().nullable().optional(),
+  categoryId: z.string().nullable().optional(),
+  webhookUrl: z.string().url().nullable().optional(),
+});
+
+export const alertRuleUpdateSchema = alertRuleSchema.partial();

@@ -144,3 +144,51 @@ create table if not exists public.saved_views (
   constraint saved_views_unique_user_name unique (user_id, name)
 );
 create index if not exists idx_saved_views_user on public.saved_views(user_id);
+
+create table if not exists public.budgets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  name text not null,
+  scope_type text not null check (scope_type in ('category','account')),
+  category_id uuid references public.categories(id) on delete set null,
+  account_id uuid references public.accounts(id) on delete set null,
+  period text not null check (period in ('monthly','weekly')),
+  target_amount integer not null,
+  starts_on date,
+  created_at timestamptz not null default now(),
+  constraint budgets_unique_user_name unique (user_id, name)
+);
+create index if not exists idx_budgets_user on public.budgets(user_id);
+create index if not exists idx_budgets_category on public.budgets(category_id);
+create index if not exists idx_budgets_account on public.budgets(account_id);
+
+create table if not exists public.alert_rules (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  name text not null,
+  rule_type text not null check (rule_type in ('low_cash','high_utilization','unusual_spend','large_tx','missed_sync')),
+  severity text not null default 'medium' check (severity in ('low','medium','high')),
+  channel text not null default 'in_app' check (channel in ('in_app','webhook','email')),
+  enabled boolean not null default true,
+  threshold_amount integer,
+  threshold_percent numeric,
+  lookback_days integer,
+  account_id uuid references public.accounts(id) on delete set null,
+  category_id uuid references public.categories(id) on delete set null,
+  webhook_url text,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_alert_rules_user on public.alert_rules(user_id);
+create index if not exists idx_alert_rules_type on public.alert_rules(rule_type);
+
+create table if not exists public.alerts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  rule_id uuid references public.alert_rules(id) on delete set null,
+  message text not null,
+  payload jsonb,
+  created_at timestamptz not null default now(),
+  acknowledged_at timestamptz
+);
+create index if not exists idx_alerts_user on public.alerts(user_id);
+create index if not exists idx_alerts_rule on public.alerts(rule_id);

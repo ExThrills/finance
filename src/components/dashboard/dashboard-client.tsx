@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchJson } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format";
-import type { TransactionWithRelations } from "@/types/finance";
+import type { AccountRecord, TransactionWithRelations } from "@/types/finance";
 
 const palette = ["#0f172a", "#334155", "#f59e0b", "#10b981", "#ef4444"];
 
@@ -33,12 +33,17 @@ function monthKey(date: Date) {
 export function DashboardClient() {
   const [month, setMonth] = useState(() => monthKey(new Date()));
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>([]);
+  const [accounts, setAccounts] = useState<AccountRecord[]>([]);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchJson<TransactionWithRelations[]>("/api/transactions");
-        setTransactions(data);
+        const [txData, accountsData] = await Promise.all([
+          fetchJson<TransactionWithRelations[]>("/api/transactions"),
+          fetchJson<AccountRecord[]>("/api/accounts"),
+        ]);
+        setTransactions(txData);
+        setAccounts(accountsData);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Failed to load dashboard.";
@@ -135,6 +140,30 @@ export function DashboardClient() {
     ],
     [incomeTotal, expenseTotal]
   );
+
+  const creditAccounts = useMemo(
+    () =>
+      accounts.filter(
+        (account) => account.type === "credit" && account.creditLimit
+      ),
+    [accounts]
+  );
+
+  const { totalLimit, totalBalance, overallUtilization } = useMemo(() => {
+    const totals = creditAccounts.reduce(
+      (acc, account) => {
+        acc.totalLimit += account.creditLimit ?? 0;
+        acc.totalBalance += Math.abs(account.currentBalance);
+        return acc;
+      },
+      { totalLimit: 0, totalBalance: 0 }
+    );
+    return {
+      ...totals,
+      overallUtilization:
+        totals.totalLimit > 0 ? totals.totalBalance / totals.totalLimit : 0,
+    };
+  }, [creditAccounts]);
 
   return (
     <div className="space-y-6">
@@ -256,6 +285,63 @@ export function DashboardClient() {
               <Bar dataKey="value" fill="#f59e0b" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Credit utilization</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {creditAccounts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No credit accounts yet.
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-sm">
+                <div>
+                  <span className="text-muted-foreground">Overall</span>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(totalBalance)} / {formatCurrency(totalLimit)}
+                  </p>
+                </div>
+                <span className={overallUtilization >= 0.3 ? "text-rose-700" : ""}>
+                  {(overallUtilization * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-muted">
+                <div
+                  className={`h-2 rounded-full ${
+                    overallUtilization >= 0.3 ? "bg-rose-500" : "bg-emerald-500"
+                  }`}
+                  style={{
+                    width: `${Math.min(overallUtilization * 100, 100)}%`,
+                  }}
+                />
+              </div>
+              <div className="divide-y divide-muted/40">
+                {creditAccounts.map((account) => {
+                  const limit = account.creditLimit ?? 0;
+                  const balance = Math.abs(account.currentBalance);
+                  const utilization = limit ? balance / limit : 0;
+                  return (
+                    <div key={account.id} className="flex items-center justify-between py-2 text-sm">
+                      <div>
+                        <p className="font-medium">{account.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(balance)} / {formatCurrency(limit)}
+                        </p>
+                      </div>
+                      <span className={utilization >= 0.3 ? "text-rose-700" : ""}>
+                        {(utilization * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

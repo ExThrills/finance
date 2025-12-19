@@ -5,6 +5,9 @@ import type {
   FieldDefinitionRecord,
   TagRecord,
   SavedViewRecord,
+  BudgetRecord,
+  AlertRuleRecord,
+  AlertRecord,
   TransactionSplitRecord,
   TransactionFieldValueRecord,
   TransactionWithRelations,
@@ -61,6 +64,57 @@ export function toSavedView(row: Tables["saved_views"]["Row"]): SavedViewRecord 
     name: row.name,
     filters: (row.filters as Record<string, unknown>) ?? {},
     createdAt: row.created_at,
+  };
+}
+
+export function toBudget(row: Tables["budgets"]["Row"]): BudgetRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    scopeType: row.scope_type as BudgetRecord["scopeType"],
+    categoryId: row.category_id,
+    accountId: row.account_id,
+    period: row.period as BudgetRecord["period"],
+    targetAmount: row.target_amount,
+    startsOn: row.starts_on,
+    createdAt: row.created_at,
+  };
+}
+
+export function toAlertRule(row: Tables["alert_rules"]["Row"]): AlertRuleRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    ruleType: row.rule_type as AlertRuleRecord["ruleType"],
+    severity: row.severity as AlertRuleRecord["severity"],
+    channel: row.channel as AlertRuleRecord["channel"],
+    enabled: row.enabled,
+    thresholdAmount: row.threshold_amount,
+    thresholdPercent: row.threshold_percent,
+    lookbackDays: row.lookback_days,
+    accountId: row.account_id,
+    categoryId: row.category_id,
+    webhookUrl: row.webhook_url,
+    createdAt: row.created_at,
+  };
+}
+
+export function toAlert(
+  row: Tables["alerts"]["Row"] & {
+    rule?: Tables["alert_rules"]["Row"] | null;
+  }
+): AlertRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    ruleId: row.rule_id,
+    message: row.message,
+    payload: (row.payload as Record<string, unknown>) ?? null,
+    createdAt: row.created_at,
+    acknowledgedAt: row.acknowledged_at,
+    rule: row.rule ? toAlertRule(row.rule) : null,
   };
 }
 

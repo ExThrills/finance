@@ -18,9 +18,9 @@
 - [x] Saved views with persistence (per user) for common slices (e.g., "Gas on Amex", "Travel on Checking").
 
 ## 4) Budgets & Alerts
-- [ ] Budgets: per category and per account/card with monthly/weekly periods; track actual vs target.
-- [ ] Alerts: low cash, high utilization thresholds, unusual spend, large tx, missed syncs; delivery via email/webhook.
-- [ ] Credit utilization: compute per-card and aggregate; surface warnings.
+- [x] Budgets: per category and per account/card with monthly/weekly periods; track actual vs target.
+- [x] Alerts: low cash, high utilization thresholds, unusual spend, large tx, missed syncs; delivery via email/webhook.
+- [x] Credit utilization: compute per-card and aggregate; surface warnings.
 
 ## 5) Reconciliation & Controls
 - [ ] Statement periods per account; reconciliation checklist for pending vs cleared vs statement items.

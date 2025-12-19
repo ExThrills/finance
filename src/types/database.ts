@@ -184,6 +184,185 @@ export type Database = {
           },
         ]
       }
+      budgets: {
+        Row: {
+          account_id: string | null
+          category_id: string | null
+          created_at: string
+          id: string
+          name: string
+          period: string
+          scope_type: string
+          starts_on: string | null
+          target_amount: number
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          period: string
+          scope_type: string
+          starts_on?: string | null
+          target_amount: number
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          period?: string
+          scope_type?: string
+          starts_on?: string | null
+          target_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alert_rules: {
+        Row: {
+          account_id: string | null
+          category_id: string | null
+          channel: string
+          created_at: string
+          enabled: boolean
+          id: string
+          lookback_days: number | null
+          name: string
+          rule_type: string
+          severity: string
+          threshold_amount: number | null
+          threshold_percent: number | null
+          user_id: string
+          webhook_url: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          category_id?: string | null
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          lookback_days?: number | null
+          name: string
+          rule_type: string
+          severity?: string
+          threshold_amount?: number | null
+          threshold_percent?: number | null
+          user_id: string
+          webhook_url?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          category_id?: string | null
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          lookback_days?: number | null
+          name?: string
+          rule_type?: string
+          severity?: string
+          threshold_amount?: number | null
+          threshold_percent?: number | null
+          user_id?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_rules_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_rules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_rules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alerts: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          id: string
+          message: string
+          payload: Json | null
+          rule_id: string | null
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          payload?: Json | null
+          rule_id?: string | null
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          payload?: Json | null
+          rule_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "alert_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           created_at: string
