@@ -235,3 +235,35 @@ export type PayoffPlan = {
   totalInterest: number;
   schedule: { month: number; balance: number }[];
 };
+
+export type RuleActionRecord = {
+  id: string;
+  ruleId: string;
+  actionType: "set_category" | "add_tag" | "set_note" | "set_splits";
+  actionPayload: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type AutomationRuleRecord = {
+  id: string;
+  userId: string;
+  name: string;
+  enabled: boolean;
+  priority: number;
+  onlyUncategorized: boolean;
+  matchDescription: string | null;
+  matchAmountMin: number | null;
+  matchAmountMax: number | null;
+  matchAccountId: string | null;
+  matchCategoryId: string | null;
+  createdAt: string;
+  actions?: RuleActionRecord[];
+};
+
+export type TransferSuggestion = {
+  id: string;
+  sourceAccountId: string;
+  destinationAccountId: string;
+  amount: number;
+  reason: string;
+};

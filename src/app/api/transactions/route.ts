@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/db";
 import { toTransactionWithRelations } from "@/lib/mappers";
 import { transactionSchema } from "@/lib/validators";
 import { logAuditEvent } from "@/lib/audit";
+import { applyRulesToTransaction } from "@/lib/rules";
 
 export const dynamic = "force-dynamic";
 
@@ -183,6 +184,8 @@ export async function POST(request: Request) {
         throw tagError;
       }
     }
+
+    await applyRulesToTransaction({ userId, transactionId: data.id });
 
     // re-fetch with splits/tags populated
     const { data: hydrated, error: hydrateError } = await supabaseAdmin

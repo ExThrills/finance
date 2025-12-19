@@ -38,9 +38,9 @@
 - [x] What-if simulator for payoff strategies (e.g., avalanche vs snowball) and transfer impacts.
 
 ## 8) Automation & Rules
-- [ ] Rule engine: if/then on merchant/MCC/amount/account to set category/tags/notes/splits.
-- [ ] Auto-transfer suggestions to rebalance envelopes or pay cards before due dates.
-- [ ] Webhooks: outbound alerts; inbound hooks for sync events.
+- [x] Rule engine: if/then on merchant/MCC/amount/account to set category/tags/notes/splits.
+- [x] Auto-transfer suggestions to rebalance envelopes or pay cards before due dates.
+- [x] Webhooks: outbound alerts; inbound hooks for sync events.
 
 ## 9) UX Polish
 - [ ] Global account switcher to pivot dashboards by account/card/type.

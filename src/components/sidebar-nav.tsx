@@ -9,6 +9,7 @@ import {
   Landmark,
   Layers,
   LineChart,
+  Sparkles,
   ShieldAlert,
   Wallet,
   Settings,
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/alerts", label: "Alerts", icon: ShieldAlert },
   { href: "/reconciliation", label: "Reconciliation", icon: ClipboardCheck },
   { href: "/projections", label: "Projections", icon: LineChart },
+  { href: "/automation", label: "Automation", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

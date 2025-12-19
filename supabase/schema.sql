@@ -246,3 +246,29 @@ create table if not exists public.recurring_series (
 );
 create index if not exists idx_recurring_series_user on public.recurring_series(user_id);
 create index if not exists idx_recurring_series_account on public.recurring_series(account_id);
+
+create table if not exists public.automation_rules (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  name text not null,
+  enabled boolean not null default true,
+  priority integer not null default 0,
+  only_uncategorized boolean not null default true,
+  match_description text,
+  match_amount_min integer,
+  match_amount_max integer,
+  match_account_id uuid references public.accounts(id) on delete set null,
+  match_category_id uuid references public.categories(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_automation_rules_user on public.automation_rules(user_id);
+create index if not exists idx_automation_rules_enabled on public.automation_rules(enabled);
+
+create table if not exists public.rule_actions (
+  id uuid primary key default gen_random_uuid(),
+  rule_id uuid not null references public.automation_rules(id) on delete cascade,
+  action_type text not null check (action_type in ('set_category','add_tag','set_note','set_splits')),
+  action_payload jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_rule_actions_rule on public.rule_actions(rule_id);

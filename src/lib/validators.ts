@@ -174,3 +174,23 @@ export const recurringSeriesSchema = z.object({
 });
 
 export const recurringSeriesUpdateSchema = recurringSeriesSchema.partial();
+
+export const ruleActionSchema = z.object({
+  actionType: z.enum(["set_category", "add_tag", "set_note", "set_splits"]),
+  actionPayload: z.record(z.any()),
+});
+
+export const automationRuleSchema = z.object({
+  name: z.string().min(1),
+  enabled: z.boolean().optional(),
+  priority: z.number().int().optional(),
+  onlyUncategorized: z.boolean().optional(),
+  matchDescription: z.string().optional(),
+  matchAmountMin: z.number().int().nullable().optional(),
+  matchAmountMax: z.number().int().nullable().optional(),
+  matchAccountId: z.string().nullable().optional(),
+  matchCategoryId: z.string().nullable().optional(),
+  actions: z.array(ruleActionSchema).min(1),
+});
+
+export const automationRuleUpdateSchema = automationRuleSchema.partial();

@@ -12,6 +12,8 @@ import type {
   BalanceAdjustmentRecord,
   AuditEventRecord,
   RecurringSeriesRecord,
+  AutomationRuleRecord,
+  RuleActionRecord,
   TransactionSplitRecord,
   TransactionFieldValueRecord,
   TransactionWithRelations,
@@ -180,6 +182,40 @@ export function toRecurringSeries(
     nextDate: row.next_date,
     active: row.active,
     createdAt: row.created_at,
+  };
+}
+
+export function toRuleAction(
+  row: Tables["rule_actions"]["Row"]
+): RuleActionRecord {
+  return {
+    id: row.id,
+    ruleId: row.rule_id,
+    actionType: row.action_type as RuleActionRecord["actionType"],
+    actionPayload: (row.action_payload as Record<string, unknown>) ?? {},
+    createdAt: row.created_at,
+  };
+}
+
+export function toAutomationRule(
+  row: Tables["automation_rules"]["Row"] & {
+    actions?: Tables["rule_actions"]["Row"][];
+  }
+): AutomationRuleRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    enabled: row.enabled,
+    priority: row.priority,
+    onlyUncategorized: row.only_uncategorized,
+    matchDescription: row.match_description,
+    matchAmountMin: row.match_amount_min,
+    matchAmountMax: row.match_amount_max,
+    matchAccountId: row.match_account_id,
+    matchCategoryId: row.match_category_id,
+    createdAt: row.created_at,
+    actions: row.actions ? row.actions.map(toRuleAction) : [],
   };
 }
 
