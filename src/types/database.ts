@@ -251,67 +251,6 @@ export type Database = {
           },
         ]
       }
-      recurring_series: {
-        Row: {
-          account_id: string
-          active: boolean
-          amount: number
-          cadence: string
-          category_id: string | null
-          created_at: string
-          description: string
-          id: string
-          next_date: string
-          user_id: string
-        }
-        Insert: {
-          account_id: string
-          active?: boolean
-          amount: number
-          cadence: string
-          category_id?: string | null
-          created_at?: string
-          description: string
-          id?: string
-          next_date: string
-          user_id: string
-        }
-        Update: {
-          account_id?: string
-          active?: boolean
-          amount?: number
-          cadence?: string
-          category_id?: string | null
-          created_at?: string
-          description?: string
-          id?: string
-          next_date?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recurring_series_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recurring_series_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recurring_series_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       balance_adjustments: {
         Row: {
           account_id: string
@@ -478,6 +417,67 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "field_definitions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_series: {
+        Row: {
+          account_id: string
+          active: boolean
+          amount: number
+          cadence: string
+          category_id: string | null
+          created_at: string
+          description: string
+          id: string
+          next_date: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          active?: boolean
+          amount: number
+          cadence: string
+          category_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          next_date: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          active?: boolean
+          amount?: number
+          cadence?: string
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          next_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_series_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_series_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_series_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
