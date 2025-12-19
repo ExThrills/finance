@@ -251,6 +251,73 @@ export type Database = {
           },
         ]
       }
+      automation_rules: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          match_account_id: string | null
+          match_amount_max: number | null
+          match_amount_min: number | null
+          match_category_id: string | null
+          match_description: string | null
+          name: string
+          only_uncategorized: boolean
+          priority: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          match_account_id?: string | null
+          match_amount_max?: number | null
+          match_amount_min?: number | null
+          match_category_id?: string | null
+          match_description?: string | null
+          name: string
+          only_uncategorized?: boolean
+          priority?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          match_account_id?: string | null
+          match_amount_max?: number | null
+          match_amount_min?: number | null
+          match_category_id?: string | null
+          match_description?: string | null
+          name?: string
+          only_uncategorized?: boolean
+          priority?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_match_account_id_fkey"
+            columns: ["match_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_rules_match_category_id_fkey"
+            columns: ["match_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_rules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balance_adjustments: {
         Row: {
           account_id: string
@@ -478,73 +545,6 @@ export type Database = {
           },
           {
             foreignKeyName: "recurring_series_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      automation_rules: {
-        Row: {
-          created_at: string
-          enabled: boolean
-          id: string
-          match_account_id: string | null
-          match_amount_max: number | null
-          match_amount_min: number | null
-          match_category_id: string | null
-          match_description: string | null
-          name: string
-          only_uncategorized: boolean
-          priority: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          enabled?: boolean
-          id?: string
-          match_account_id?: string | null
-          match_amount_max?: number | null
-          match_amount_min?: number | null
-          match_category_id?: string | null
-          match_description?: string | null
-          name: string
-          only_uncategorized?: boolean
-          priority?: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          enabled?: boolean
-          id?: string
-          match_account_id?: string | null
-          match_amount_max?: number | null
-          match_amount_min?: number | null
-          match_category_id?: string | null
-          match_description?: string | null
-          name?: string
-          only_uncategorized?: boolean
-          priority?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "automation_rules_match_account_id_fkey"
-            columns: ["match_account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "automation_rules_match_category_id_fkey"
-            columns: ["match_category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "automation_rules_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
