@@ -32,9 +32,41 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Account not found." }, { status: 404 });
     }
 
+    const patch: Record<string, unknown> = {};
+    if (parsed.data.name !== undefined) {
+      patch.name = parsed.data.name;
+    }
+    if (parsed.data.type !== undefined) {
+      patch.type = parsed.data.type;
+    }
+    if (parsed.data.institution !== undefined) {
+      patch.institution = parsed.data.institution ?? null;
+    }
+    if (parsed.data.last4 !== undefined) {
+      patch.last4 = parsed.data.last4 ?? null;
+    }
+    if (parsed.data.creditLimit !== undefined) {
+      patch.credit_limit = parsed.data.creditLimit ?? null;
+    }
+    if (parsed.data.apr !== undefined) {
+      patch.apr = parsed.data.apr ?? null;
+    }
+    if (parsed.data.statementCloseDay !== undefined) {
+      patch.statement_close_day = parsed.data.statementCloseDay ?? null;
+    }
+    if (parsed.data.statementDueDay !== undefined) {
+      patch.statement_due_day = parsed.data.statementDueDay ?? null;
+    }
+    if (parsed.data.rewardCurrency !== undefined) {
+      patch.reward_currency = parsed.data.rewardCurrency ?? null;
+    }
+    if (parsed.data.syncStatus !== undefined) {
+      patch.sync_status = parsed.data.syncStatus ?? "manual";
+    }
+
     const { data, error } = await supabaseAdmin
       .from("accounts")
-      .update(parsed.data)
+      .update(patch)
       .eq("id", id)
       .select()
       .single();

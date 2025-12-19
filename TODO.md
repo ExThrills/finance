@@ -28,9 +28,9 @@
 - [x] Manual balance adjustments with memo + audit trail.
 
 ## 6) Balances, Sync, and Health
-- [ ] Balance service: poll/sync balances (placeholder/manual now; Plaid/Supabase functions later); store staleness timestamps.
-- [ ] UI: account dashboard with balance, available credit, utilization, rewards, next close/due, last sync status.
-- [ ] Connector health badges (last success, errors, MFA required).
+- [x] Balance service: poll/sync balances (placeholder/manual now; Plaid/Supabase functions later); store staleness timestamps.
+- [x] UI: account dashboard with balance, available credit, utilization, rewards, next close/due, last sync status.
+- [x] Connector health badges (last success, errors, MFA required).
 
 ## 7) Cash Flow & Projections
 - [ ] Recurring detection (simple heuristic) and recurring model storage.

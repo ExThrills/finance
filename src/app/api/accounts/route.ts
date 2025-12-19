@@ -44,6 +44,14 @@ export async function POST(request: Request) {
         user_id: userId,
         name: parsed.data.name,
         type: parsed.data.type,
+        institution: parsed.data.institution ?? null,
+        last4: parsed.data.last4 ?? null,
+        credit_limit: parsed.data.creditLimit ?? null,
+        apr: parsed.data.apr ?? null,
+        statement_close_day: parsed.data.statementCloseDay ?? null,
+        statement_due_day: parsed.data.statementDueDay ?? null,
+        reward_currency: parsed.data.rewardCurrency ?? null,
+        sync_status: parsed.data.syncStatus ?? "manual",
       })
       .select()
       .single();
