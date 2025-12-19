@@ -51,10 +51,47 @@ async function main() {
 
   const checkingId = randomUUID();
   const savingsId = randomUUID();
+  const amexId = randomUUID();
 
   await supabase.from("accounts").insert([
-    { id: checkingId, user_id: userId, name: "Checking", type: "checking" },
-    { id: savingsId, user_id: userId, name: "Savings", type: "savings" },
+    {
+      id: checkingId,
+      user_id: userId,
+      name: "Checking",
+      type: "checking",
+      institution: "Ally",
+      last4: "4321",
+      current_balance: 500_000,
+      available_balance: 500_000,
+      sync_status: "manual",
+    },
+    {
+      id: savingsId,
+      user_id: userId,
+      name: "Savings",
+      type: "savings",
+      institution: "Ally",
+      last4: "9876",
+      current_balance: 750_000,
+      available_balance: 750_000,
+      sync_status: "manual",
+    },
+    {
+      id: amexId,
+      user_id: userId,
+      name: "Amex Gold",
+      type: "credit",
+      institution: "American Express",
+      last4: "1002",
+      credit_limit: 10_000_00,
+      current_balance: 240_000,
+      available_credit: 10_000_00 - 240_000,
+      apr: 22.99,
+      statement_close_day: 20,
+      statement_due_day: 15,
+      reward_currency: "MR",
+      sync_status: "manual",
+    },
   ]);
 
   const rentId = randomUUID();
@@ -62,6 +99,8 @@ async function main() {
   const gasId = randomUUID();
   const diningId = randomUUID();
   const salaryId = randomUUID();
+  const cashbackId = randomUUID();
+  const amexPaymentTransferId = randomUUID();
 
   await supabase.from("categories").insert([
     { id: rentId, user_id: userId, name: "Rent", kind: "expense" },
@@ -69,6 +108,7 @@ async function main() {
     { id: gasId, user_id: userId, name: "Gas", kind: "expense" },
     { id: diningId, user_id: userId, name: "Dining", kind: "expense" },
     { id: salaryId, user_id: userId, name: "Salary", kind: "income" },
+    { id: cashbackId, user_id: userId, name: "Cashback", kind: "income" },
   ]);
 
   const merchantFieldId = randomUUID();
@@ -122,6 +162,53 @@ async function main() {
     },
     {
       user_id: userId,
+      account_id: amexId,
+      category_id: gasId,
+      amount: 5200,
+      date: daysFrom(monthStart, 9),
+      description: "Fuel - Amex",
+      is_pending: false,
+    },
+    {
+      user_id: userId,
+      account_id: amexId,
+      category_id: diningId,
+      amount: 6800,
+      date: daysFrom(monthStart, 12),
+      description: "Date night",
+      is_pending: true,
+    },
+    {
+      user_id: userId,
+      account_id: amexId,
+      category_id: groceriesId,
+      amount: 9400,
+      date: daysFrom(monthStart, 15),
+      description: "Trader Joe's",
+      is_pending: false,
+    },
+    {
+      user_id: userId,
+      account_id: checkingId,
+      category_id: null,
+      amount: 60000,
+      date: daysFrom(monthStart, 18),
+      description: "Payment to Amex Gold",
+      is_pending: false,
+      transfer_id: amexPaymentTransferId,
+    },
+    {
+      user_id: userId,
+      account_id: amexId,
+      category_id: null,
+      amount: 60000,
+      date: daysFrom(monthStart, 18),
+      description: "Payment from Checking",
+      is_pending: false,
+      transfer_id: amexPaymentTransferId,
+    },
+    {
+      user_id: userId,
       account_id: savingsId,
       category_id: null,
       amount: 50000,
@@ -168,7 +255,35 @@ async function main() {
       date: daysFrom(lastMonthStart, 13),
       description: "Cafe brunch",
     },
+    {
+      user_id: userId,
+      account_id: amexId,
+      category_id: diningId,
+      amount: 4200,
+      date: daysFrom(lastMonthStart, 9),
+      description: "Coffee shop",
+      is_pending: false,
+    },
+    {
+      user_id: userId,
+      account_id: amexId,
+      category_id: gasId,
+      amount: 4800,
+      date: daysFrom(lastMonthStart, 7),
+      description: "Shell station",
+      is_pending: false,
+    },
   ]);
+
+  await supabase.from("transfers").insert({
+    id: amexPaymentTransferId,
+    user_id: userId,
+    source_account_id: checkingId,
+    destination_account_id: amexId,
+    amount: 60000,
+    memo: "Monthly Amex payment",
+    occurred_at: daysFrom(monthStart, 18),
+  });
 }
 
 main()

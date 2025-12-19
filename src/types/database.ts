@@ -42,6 +42,19 @@ export interface Database {
             | "cash"
             | "investment"
             | "other";
+          institution: string | null;
+          last4: string | null;
+          credit_limit: number | null;
+          apr: number | null;
+          statement_close_day: number | null;
+          statement_due_day: number | null;
+          current_balance: number;
+          available_balance: number | null;
+          available_credit: number | null;
+          reward_currency: string | null;
+          last_sync_at: string | null;
+          sync_status: "manual" | "ok" | "error" | "disconnected" | "pending";
+          sync_error: string | null;
           created_at: string;
         };
         Insert: {
@@ -55,6 +68,19 @@ export interface Database {
             | "cash"
             | "investment"
             | "other";
+          institution?: string | null;
+          last4?: string | null;
+          credit_limit?: number | null;
+          apr?: number | null;
+          statement_close_day?: number | null;
+          statement_due_day?: number | null;
+          current_balance?: number;
+          available_balance?: number | null;
+          available_credit?: number | null;
+          reward_currency?: string | null;
+          last_sync_at?: string | null;
+          sync_status?: "manual" | "ok" | "error" | "disconnected" | "pending";
+          sync_error?: string | null;
           created_at?: string;
         };
         Update: {
@@ -68,6 +94,19 @@ export interface Database {
             | "cash"
             | "investment"
             | "other";
+          institution?: string | null;
+          last4?: string | null;
+          credit_limit?: number | null;
+          apr?: number | null;
+          statement_close_day?: number | null;
+          statement_due_day?: number | null;
+          current_balance?: number;
+          available_balance?: number | null;
+          available_credit?: number | null;
+          reward_currency?: string | null;
+          last_sync_at?: string | null;
+          sync_status?: "manual" | "ok" | "error" | "disconnected" | "pending";
+          sync_error?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -110,6 +149,61 @@ export interface Database {
           }
         ];
       };
+      transfers: {
+        Row: {
+          id: string;
+          user_id: string;
+          source_account_id: string;
+          destination_account_id: string;
+          amount: number;
+          memo: string | null;
+          occurred_at: string;
+          created_at: string;
+          transfer_group_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          source_account_id: string;
+          destination_account_id: string;
+          amount: number;
+          memo?: string | null;
+          occurred_at?: string;
+          created_at?: string;
+          transfer_group_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          source_account_id?: string;
+          destination_account_id?: string;
+          amount?: number;
+          memo?: string | null;
+          occurred_at?: string;
+          created_at?: string;
+          transfer_group_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transfers_destination_account_id_fkey";
+            columns: ["destination_account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transfers_source_account_id_fkey";
+            columns: ["source_account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transfers_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       transactions: {
         Row: {
           id: string;
@@ -120,6 +214,11 @@ export interface Database {
           date: string;
           description: string;
           notes: string | null;
+          is_pending: boolean;
+          cleared_at: string | null;
+          transfer_id: string | null;
+          recurring_group_key: string | null;
+          recurring_confidence: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -132,6 +231,11 @@ export interface Database {
           date: string;
           description: string;
           notes?: string | null;
+          is_pending?: boolean;
+          cleared_at?: string | null;
+          transfer_id?: string | null;
+          recurring_group_key?: string | null;
+          recurring_confidence?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -144,6 +248,11 @@ export interface Database {
           date?: string;
           description?: string;
           notes?: string | null;
+          is_pending?: boolean;
+          cleared_at?: string | null;
+          transfer_id?: string | null;
+          recurring_group_key?: string | null;
+          recurring_confidence?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -164,6 +273,12 @@ export interface Database {
             foreignKeyName: "transactions_user_id_fkey";
             columns: ["user_id"];
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_transfer_id_fkey";
+            columns: ["transfer_id"];
+            referencedRelation: "transfers";
             referencedColumns: ["id"];
           }
         ];

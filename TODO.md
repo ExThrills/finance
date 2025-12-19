@@ -1,16 +1,16 @@
 # Implementation To-Do (based on GAMEPLAN.md)
 
 ## 1) Data Model & Types
-- [ ] Migrations: extend accounts with type/institution/last4/limits/APR/statement close/due dates; add balance fields and sync metadata (last_sync_at, sync_status).
-- [ ] Migrations: transfers table (source_account_id, dest_account_id, transfer_group_id), pending/cleared flags on transactions, recurring detection hints, reward currency fields on cards.
-- [ ] Types: regenerate Supabase types; update `src/types/database.ts` and Zod schemas.
-- [ ] Seed data: update seed script to include multiple checking/savings/cards with realistic balances and transfers.
+- [x] Migrations: extend accounts with type/institution/last4/limits/APR/statement close/due dates; add balance fields and sync metadata (last_sync_at, sync_status).
+- [x] Migrations: transfers table (source_account_id, dest_account_id, transfer_group_id), pending/cleared flags on transactions, recurring detection hints, reward currency fields on cards.
+- [x] Types: regenerate Supabase types; update `src/types/database.ts` and Zod schemas.
+- [x] Seed data: update seed script to include multiple checking/savings/cards with realistic balances and transfers.
 
 ## 2) Posting & Transaction Flows
-- [ ] API: transaction create/update to require account selection, allow pending/cleared, support splits (child rows) and transfer/payment links.
-- [ ] API: transfers/payment endpoints to create dual-leg entries (e.g., checking → credit card payment).
-- [ ] UI: transaction composer with account picker, category picker, tags, splits, and transfer/payment toggle.
-- [ ] UI: enforce/pay-from/pay-to selection; handle card payments and account transfers cleanly.
+- [x] API: transaction create/update to require account selection and support pending/cleared/transfer flags (recurring fields stored).
+- [x] API: transfers/payment endpoint to create dual-leg entries (e.g., checking → credit card payment).
+- [x] UI: transaction composer adds pending toggle and transfer/payment toggle with destination account enforcement.
+- [ ] UI: splits/tags in composer and API (still pending; requires schema design for splits/tags).
 
 ## 3) Views, Filters, and Saved Searches
 - [ ] Filters: by account, account type (checking/savings/credit), institution, category, date, tags, pending/cleared.

@@ -7,7 +7,8 @@ import { transactionSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
-const toDateString = (date: Date) => date.toISOString().slice(0, 10);
+const toDateString = (date: Date | string) =>
+  date instanceof Date ? date.toISOString().slice(0, 10) : new Date(date).toISOString().slice(0, 10);
 
 export async function GET(request: Request) {
   try {
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
     const categoryId = searchParams.get("categoryId");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const pending = searchParams.get("pending");
 
     let query = supabaseAdmin
       .from("transactions")
@@ -44,6 +46,12 @@ export async function GET(request: Request) {
     }
     if (endDate) {
       query = query.lte("date", endDate);
+    }
+    if (pending === "true") {
+      query = query.eq("is_pending", true);
+    }
+    if (pending === "false") {
+      query = query.eq("is_pending", false);
     }
 
     const { data, error } = await query;
@@ -84,6 +92,11 @@ export async function POST(request: Request) {
         date: toDateString(parsed.data.date),
         description: parsed.data.description,
         notes: parsed.data.notes ?? null,
+        is_pending: parsed.data.isPending ?? false,
+        cleared_at: parsed.data.clearedAt ? new Date(parsed.data.clearedAt).toISOString() : null,
+        transfer_id: parsed.data.transferId ?? null,
+        recurring_group_key: parsed.data.recurringGroupKey ?? null,
+        recurring_confidence: parsed.data.recurringConfidence ?? null,
       })
       .select(
         `

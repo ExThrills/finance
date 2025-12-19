@@ -46,13 +46,33 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       patch.amount = parsed.data.amount;
     }
     if (parsed.data.date !== undefined) {
-      patch.date = parsed.data.date;
+      patch.date =
+        parsed.data.date instanceof Date
+          ? parsed.data.date.toISOString().slice(0, 10)
+          : new Date(parsed.data.date).toISOString().slice(0, 10);
     }
     if (parsed.data.description !== undefined) {
       patch.description = parsed.data.description;
     }
     if (parsed.data.notes !== undefined) {
       patch.notes = parsed.data.notes ?? null;
+    }
+    if (parsed.data.isPending !== undefined) {
+      patch.is_pending = parsed.data.isPending;
+    }
+    if (parsed.data.clearedAt !== undefined) {
+      patch.cleared_at = parsed.data.clearedAt
+        ? new Date(parsed.data.clearedAt).toISOString()
+        : null;
+    }
+    if (parsed.data.transferId !== undefined) {
+      patch.transfer_id = parsed.data.transferId ?? null;
+    }
+    if (parsed.data.recurringGroupKey !== undefined) {
+      patch.recurring_group_key = parsed.data.recurringGroupKey ?? null;
+    }
+    if (parsed.data.recurringConfidence !== undefined) {
+      patch.recurring_confidence = parsed.data.recurringConfidence ?? null;
     }
 
     const { data, error } = await supabaseAdmin

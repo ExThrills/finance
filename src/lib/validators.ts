@@ -22,6 +22,16 @@ export const fieldTypes = [
 export const accountSchema = z.object({
   name: z.string().min(1),
   type: z.enum(accountTypes),
+  institution: z.string().min(1).optional(),
+  last4: z.string().length(4).optional(),
+  creditLimit: z.number().int().nonnegative().optional(),
+  apr: z.number().nonnegative().optional(),
+  statementCloseDay: z.number().int().min(1).max(31).optional(),
+  statementDueDay: z.number().int().min(1).max(31).optional(),
+  rewardCurrency: z.string().min(1).optional(),
+  syncStatus: z
+    .enum(["manual", "ok", "error", "disconnected", "pending"])
+    .optional(),
 });
 
 export const accountUpdateSchema = accountSchema.partial();
@@ -40,9 +50,23 @@ export const transactionSchema = z.object({
   date: z.coerce.date(),
   description: z.string().min(1),
   notes: z.string().nullable().optional(),
+  isPending: z.boolean().optional(),
+  clearedAt: z.coerce.date().nullable().optional(),
+  transferId: z.string().min(1).nullable().optional(),
+  recurringGroupKey: z.string().nullable().optional(),
+  recurringConfidence: z.number().optional(),
 });
 
 export const transactionUpdateSchema = transactionSchema.partial();
+
+export const transferSchema = z.object({
+  sourceAccountId: z.string().min(1),
+  destinationAccountId: z.string().min(1),
+  amount: z.number().int(),
+  date: z.coerce.date(),
+  memo: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+});
 
 export const fieldDefinitionSchema = z.object({
   name: z.string().min(1),

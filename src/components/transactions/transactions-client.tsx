@@ -113,6 +113,7 @@ export function TransactionsClient() {
     accountId: string;
     categoryId?: string | null;
     notes?: string | null;
+    isPending?: boolean;
   }) => {
     try {
       const transaction = await fetchJson<TransactionWithRelations>(
@@ -130,6 +131,32 @@ export function TransactionsClient() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to add transaction.";
+      toast.error(message);
+    }
+  };
+
+  const handleTransfer = async (payload: {
+    amount: number;
+    date: string;
+    description: string;
+    sourceAccountId: string;
+    destinationAccountId: string;
+    memo?: string | null;
+  }) => {
+    try {
+      const response = await fetchJson<{
+        transactions: TransactionWithRelations[];
+      }>("/api/transfers", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      if (response.transactions) {
+        setTransactions((prev) => [...response.transactions, ...prev]);
+      }
+      toast.success("Transfer recorded.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to add transfer.";
       toast.error(message);
     }
   };
@@ -177,7 +204,8 @@ export function TransactionsClient() {
           accounts={accounts}
           categories={categories}
           defaultDate={formatDateInput(new Date())}
-          onSubmit={handleQuickAdd}
+          onSubmitTransaction={handleQuickAdd}
+          onSubmitTransfer={handleTransfer}
         />
       </div>
 
