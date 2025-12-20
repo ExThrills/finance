@@ -21,10 +21,10 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Add quick “Add transaction” button in top bar.
 
 ## Phase 3 — Dashboard V2 Layout
-- [ ] Add Financial Health strip (cash, net, utilization, upcoming bills).
-- [ ] Add Budget burn‑down card (visible if budgets exist).
-- [ ] Add Alerts timeline preview (last 5).
-- [ ] Align chart sizing and legends across dashboard cards.
+- [x] Add Financial Health strip (cash, net, utilization, upcoming bills).
+- [x] Add Budget burn‑down card (visible if budgets exist).
+- [x] Add Alerts timeline preview (last 5).
+- [x] Align chart sizing and legends across dashboard cards.
 
 ## Phase 4 — Transactions V2
 - [ ] Add sticky quick filters (Last 7 days, Pending, Uncategorized, Recurring, Large).

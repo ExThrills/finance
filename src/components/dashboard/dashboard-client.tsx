@@ -21,12 +21,14 @@ import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchJson } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format";
 import type {
   AccountRecord,
+  AlertRecord,
   BudgetWithActuals,
   CategoryRecord,
   TransactionWithRelations,
@@ -40,29 +42,37 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${month}`;
 }
 
+function formatShortDate(value: string) {
+  const date = new Date(value);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 export function DashboardClient() {
   const [month, setMonth] = useState(() => monthKey(new Date()));
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>([]);
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
   const [budgets, setBudgets] = useState<BudgetWithActuals[]>([]);
+  const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [loadingSampleData, setLoadingSampleData] = useState(false);
   const [nextStepsDismissed, setNextStepsDismissed] = useState(false);
   const { scope } = useAccountScope();
 
   const loadDashboard = useCallback(async () => {
     try {
-      const [txData, accountsData, categoriesData, budgetsData] =
+      const [txData, accountsData, categoriesData, budgetsData, alertsData] =
         await Promise.all([
           fetchJson<TransactionWithRelations[]>("/api/transactions"),
           fetchJson<AccountRecord[]>("/api/accounts"),
           fetchJson<CategoryRecord[]>("/api/categories"),
           fetchJson<BudgetWithActuals[]>("/api/budgets"),
+          fetchJson<AlertRecord[]>("/api/alerts"),
         ]);
       setTransactions(txData);
       setAccounts(accountsData);
       setCategories(categoriesData);
       setBudgets(budgetsData);
+      setAlerts(alertsData);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to load dashboard.";
@@ -150,6 +160,32 @@ export function DashboardClient() {
     return transactions;
   }, [accountById, scope, transactions]);
 
+  const cashOnHand = useMemo(() => {
+    return scopedAccounts
+      .filter((account) =>
+        ["checking", "savings", "cash"].includes(account.type)
+      )
+      .reduce((sum, account) => sum + (account.currentBalance || 0), 0);
+  }, [scopedAccounts]);
+
+  const upcomingBills = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    end.setHours(23, 59, 59, 999);
+    const upcoming = scopedTransactions.filter((tx) => {
+      const date = new Date(tx.date);
+      return (
+        date >= start &&
+        date <= end &&
+        tx.category?.kind === "expense"
+      );
+    });
+    const total = upcoming.reduce((sum, tx) => sum + tx.amount, 0);
+    return { count: upcoming.length, total };
+  }, [scopedTransactions]);
+
   const monthTransactions = useMemo(() => {
     return scopedTransactions.filter((tx) => {
       const date = new Date(tx.date);
@@ -206,6 +242,14 @@ export function DashboardClient() {
     return buckets;
   }, [monthStart, monthTransactions]);
 
+  const averageDaily = useMemo(() => {
+    if (!dailyCashflow.length) {
+      return 0;
+    }
+    const total = dailyCashflow.reduce((sum, day) => sum + day.net, 0);
+    return total / dailyCashflow.length;
+  }, [dailyCashflow]);
+
   const barData = useMemo(
     () => [
       { name: "Income", value: incomeTotal },
@@ -213,6 +257,8 @@ export function DashboardClient() {
     ],
     [incomeTotal, expenseTotal]
   );
+
+  const topCategories = useMemo(() => pieData.slice(0, 3), [pieData]);
 
   const creditAccounts = useMemo(
     () =>
@@ -237,6 +283,10 @@ export function DashboardClient() {
         totals.totalLimit > 0 ? totals.totalBalance / totals.totalLimit : 0,
     };
   }, [creditAccounts]);
+
+  const alertsPreview = useMemo(() => alerts.slice(0, 5), [alerts]);
+
+  const budgetPreview = useMemo(() => budgets.slice(0, 3), [budgets]);
 
   const recentByAccount = useMemo(() => {
     const map = new Map<string, TransactionWithRelations>();
@@ -306,6 +356,9 @@ export function DashboardClient() {
     window.localStorage.setItem("dashboardNextStepsDismissed", "true");
   };
 
+  const chartGridClass =
+    budgets.length > 0 ? "lg:grid-cols-3" : "lg:grid-cols-2";
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -329,6 +382,52 @@ export function DashboardClient() {
           </>
         }
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Financial health</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Net cashflow
+            </p>
+            <p className="text-2xl font-semibold">{formatCurrency(netTotal)}</p>
+            <p className="text-xs text-muted-foreground">This month</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Cash on hand
+            </p>
+            <p className="text-2xl font-semibold">{formatCurrency(cashOnHand)}</p>
+            <p className="text-xs text-muted-foreground">Checking + savings</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Credit utilization
+            </p>
+            <p className="text-2xl font-semibold">
+              {totalLimit > 0 ? `${(overallUtilization * 100).toFixed(1)}%` : "—"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {totalLimit > 0
+                ? `${formatCurrency(totalBalance)} / ${formatCurrency(totalLimit)}`
+                : "No credit limits"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Upcoming bills
+            </p>
+            <p className="text-2xl font-semibold">
+              {formatCurrency(upcomingBills.total)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {upcomingBills.count} in next 7 days
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {!checklistComplete ? (
         <Card>
@@ -433,32 +532,52 @@ export function DashboardClient() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className={`grid gap-6 ${chartGridClass}`}>
         <Card>
           <CardHeader>
             <CardTitle>Spending by category</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={70}
-                  outerRadius={110}
-                  paddingAngle={3}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell
-                      key={`${entry.name}-${index}`}
-                      fill={palette[index % palette.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="space-y-3">
+            <div className="h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={70}
+                    outerRadius={110}
+                    paddingAngle={3}
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell
+                        key={`${entry.name}-${index}`}
+                        fill={palette[index % palette.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              {topCategories.length === 0 ? (
+                <span>No expense categories yet.</span>
+              ) : (
+                topCategories.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: palette[index % palette.length] }}
+                      />
+                      <span>{entry.name}</span>
+                    </div>
+                    <span>{formatCurrency(entry.value)}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -466,40 +585,138 @@ export function DashboardClient() {
           <CardHeader>
             <CardTitle>Monthly cashflow</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dailyCashflow}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis tickFormatter={(value) => `$${value / 100}`} />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Line
-                  type="monotone"
-                  dataKey="net"
-                  stroke="#0f172a"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="space-y-3">
+            <div className="h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailyCashflow}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis tickFormatter={(value) => `$${value / 100}`} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Line
+                    type="monotone"
+                    dataKey="net"
+                    stroke="#0f172a"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Net this month</span>
+              <span className={netTotal < 0 ? "text-rose-700" : "text-emerald-700"}>
+                {formatCurrency(netTotal)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Avg daily</span>
+              <span>{formatCurrency(averageDaily)}</span>
+            </div>
           </CardContent>
         </Card>
+
+        {budgets.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Budget burn-down</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {budgetPreview.map((budget) => {
+                const percent = Math.min(budget.percentUsed, 200);
+                const remaining = Math.max(budget.targetAmount - budget.actualAmount, 0);
+                return (
+                  <div key={budget.id} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{budget.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatCurrency(remaining)} left
+                      </span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-muted">
+                      <div
+                        className={`h-2 rounded-full ${
+                          budget.percentUsed >= 100 ? "bg-rose-500" : "bg-emerald-500"
+                        }`}
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {formatCurrency(budget.actualAmount)} of {formatCurrency(budget.targetAmount)}
+                      </span>
+                      <span>{budget.percentUsed}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Income vs expenses</CardTitle>
         </CardHeader>
-        <CardContent className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={barData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => `$${value / 100}`} />
-              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-              <Bar dataKey="value" fill="#f59e0b" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <CardContent className="space-y-3">
+          <div className="h-[240px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value) => `$${value / 100}`} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Bar dataKey="value" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Income</span>
+            <span className="text-emerald-700">{formatCurrency(incomeTotal)}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Expenses</span>
+            <span className="text-rose-700">{formatCurrency(expenseTotal)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Alerts timeline</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {alertsPreview.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No alerts in the last 30 days.
+            </p>
+          ) : (
+            alertsPreview.map((alert) => {
+              const severity = alert.rule?.severity ?? "low";
+              const severityClasses =
+                severity === "high"
+                  ? "bg-rose-100 text-rose-700"
+                  : severity === "medium"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-emerald-100 text-emerald-700";
+              return (
+                <div
+                  key={alert.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/10 px-3 py-2"
+                >
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{alert.message}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatShortDate(alert.createdAt)}
+                      {alert.acknowledgedAt ? " · Acknowledged" : ""}
+                    </p>
+                  </div>
+                  <Badge className={severityClasses}>{severity}</Badge>
+                </div>
+              );
+            })
+          )}
         </CardContent>
       </Card>
 
