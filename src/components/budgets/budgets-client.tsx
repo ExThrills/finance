@@ -5,6 +5,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -111,12 +113,10 @@ export function BudgetsClient() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Budgets</h1>
-        <p className="text-sm text-muted-foreground">
-          Track targets by category or account with weekly or monthly periods.
-        </p>
-      </div>
+      <PageHeader
+        title="Budgets"
+        description="Track targets by category or account with weekly or monthly periods."
+      />
 
       <Card>
         <CardHeader>
@@ -219,9 +219,10 @@ export function BudgetsClient() {
         </CardHeader>
         <CardContent className="space-y-3">
           {budgets.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No budgets yet. Start with one category to see progress at a glance.
-            </p>
+            <EmptyState
+              title="No budgets yet"
+              description="Start with one category to see progress at a glance."
+            />
           ) : (
             budgets.map((budget) => {
               const percent = Math.min(budget.percentUsed, 200);

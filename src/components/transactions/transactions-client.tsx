@@ -14,6 +14,9 @@ import type {
 } from "@/types/finance";
 import { useAccountScope } from "@/components/account-scope-context";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { Toolbar } from "@/components/ui/toolbar";
 import {
   Dialog,
   DialogContent,
@@ -413,23 +416,21 @@ export function TransactionsClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Transactions</h1>
-          <p className="text-sm text-muted-foreground">
-            Edit cells inline and keep your ledger up to date.
-          </p>
-        </div>
-        <QuickAddTransaction
-          accounts={accounts}
-          categories={categories}
-          defaultDate={formatDateInput(new Date())}
-          onSubmitTransaction={handleQuickAdd}
-          onSubmitTransfer={handleTransfer}
-        />
-      </div>
+      <PageHeader
+        title="Transactions"
+        description="Edit cells inline and keep your ledger up to date."
+        actions={
+          <QuickAddTransaction
+            accounts={accounts}
+            categories={categories}
+            defaultDate={formatDateInput(new Date())}
+            onSubmitTransaction={handleQuickAdd}
+            onSubmitTransfer={handleTransfer}
+          />
+        }
+      />
 
-      <div className="rounded-2xl border bg-muted/20 p-4">
+      <Toolbar className="p-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-[220px] space-y-1">
             <Label>Saved views</Label>
@@ -450,7 +451,7 @@ export function TransactionsClient() {
           <div className="flex flex-wrap items-center gap-2">
             <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
               <DialogTrigger asChild>
-                <Button type="button" variant="outline">
+                <Button type="button" variant="outline" size="sm">
                   Save current view
                 </Button>
               </DialogTrigger>
@@ -480,6 +481,7 @@ export function TransactionsClient() {
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={handleUpdateView}
               disabled={!activeView}
             >
@@ -488,6 +490,7 @@ export function TransactionsClient() {
             <Button
               type="button"
               variant="ghost"
+              size="sm"
               onClick={handleDeleteView}
               disabled={!activeView}
             >
@@ -499,18 +502,20 @@ export function TransactionsClient() {
             <Button
               type="button"
               variant={filters.categoryId === "uncategorized" ? "default" : "outline"}
+              size="sm"
               onClick={applyInboxFilters}
             >
               Uncategorized ({inboxCount})
             </Button>
           </div>
         </div>
-      </div>
+      </Toolbar>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() =>
             applyQuickFilter({
               status: "pending",
@@ -524,6 +529,7 @@ export function TransactionsClient() {
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() =>
             applyQuickFilter({
               status: "cleared",
@@ -537,6 +543,7 @@ export function TransactionsClient() {
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() =>
             applyQuickFilter({
               categoryId: "uncategorized",
@@ -550,6 +557,7 @@ export function TransactionsClient() {
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() => {
             const now = new Date();
             const start = new Date(now);
@@ -565,6 +573,7 @@ export function TransactionsClient() {
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() =>
             applyQuickFilter({
               startDate: "",
@@ -601,9 +610,10 @@ export function TransactionsClient() {
           loading={loading}
         />
       ) : (
-        <div className="rounded-2xl border bg-muted/20 p-6 text-sm text-muted-foreground">
-          No transactions yet. Add your first one or paste a bank CSV and we'll map fields.
-        </div>
+        <EmptyState
+          title="No transactions yet"
+          description="Add your first one or paste a bank CSV and we'll map fields."
+        />
       )}
     </div>
   );

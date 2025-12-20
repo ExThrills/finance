@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -33,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Toolbar } from "@/components/ui/toolbar";
 import { formatCurrency, formatDateInput } from "@/lib/format";
 import type {
   AccountRecord,
@@ -339,23 +341,27 @@ export function TransactionsTable({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-        Loading transactions...
-      </div>
+      <EmptyState
+        title="Loading transactions"
+        description="Fetching the latest ledger entries."
+        align="center"
+      />
     );
   }
 
   if (!data.length) {
     return (
-      <div className="rounded-2xl border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-        No transactions match this filter.
-      </div>
+      <EmptyState
+        title="No results"
+        description="No transactions match this filter."
+        align="center"
+      />
     );
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-muted/20 p-3 text-sm">
+      <Toolbar>
         <div className="font-medium">
           {selectedIds.length} selected
         </div>
@@ -375,6 +381,7 @@ export function TransactionsTable({
           <Button
             type="button"
             variant="outline"
+            size="sm"
             disabled={!selectedIds.length || !bulkCategoryId}
             onClick={() =>
               applyBulkUpdate({ categoryId: bulkCategoryId || null })
@@ -397,6 +404,7 @@ export function TransactionsTable({
           <Button
             type="button"
             variant="outline"
+            size="sm"
             disabled={!selectedIds.length || !bulkAccountId}
             onClick={() =>
               applyBulkUpdate({ accountId: bulkAccountId })
@@ -416,6 +424,7 @@ export function TransactionsTable({
           <Button
             type="button"
             variant="outline"
+            size="sm"
             disabled={!selectedIds.length || !bulkPending}
             onClick={() =>
               applyBulkUpdate({ isPending: bulkPending === "pending" })
@@ -426,13 +435,14 @@ export function TransactionsTable({
           <Button
             type="button"
             variant="destructive"
+            size="sm"
             disabled={!selectedIds.length}
             onClick={handleBulkDelete}
           >
             Delete selected
           </Button>
         </div>
-      </div>
+      </Toolbar>
       <Table>
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (

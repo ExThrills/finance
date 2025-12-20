@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -177,12 +179,10 @@ export function AccountsClient() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Accounts</h1>
-        <p className="text-sm text-muted-foreground">
-          Monitor balances, utilization, and sync health.
-        </p>
-      </div>
+      <PageHeader
+        title="Accounts"
+        description="Monitor balances, utilization, and sync health."
+      />
 
       <Card>
         <CardHeader>
@@ -307,9 +307,10 @@ export function AccountsClient() {
         </CardHeader>
         <CardContent className="space-y-3">
           {accounts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No accounts yet. Add checking and credit cards to power utilization.
-            </p>
+            <EmptyState
+              title="No accounts yet"
+              description="Add checking and credit cards to power utilization."
+            />
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {accounts.map((account) => {

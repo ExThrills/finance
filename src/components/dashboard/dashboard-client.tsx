@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchJson } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format";
@@ -307,29 +308,27 @@ export function DashboardClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Snapshot of your cashflow and spending patterns.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Month</span>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description="Snapshot of your cashflow and spending patterns."
+        actions={
+          <>
+            <span className="text-sm text-muted-foreground">Month</span>
+            <Select value={month} onValueChange={setMonth}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        }
+      />
 
       {!checklistComplete ? (
         <Card>

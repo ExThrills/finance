@@ -3,10 +3,10 @@
 This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped to ship independently.
 
 ## Phase 0 — Foundations
-- [ ] Create design token map (colors, spacing, typography, shadows).
-- [ ] Define layout rhythm: consistent paddings, section spacing, card headers.
-- [ ] Normalize buttons, badges, and table toolbars.
-- [ ] Add empty‑state components with short guidance text.
+- [x] Create design token map (colors, spacing, typography, shadows).
+- [x] Define layout rhythm: consistent paddings, section spacing, card headers.
+- [x] Normalize buttons, badges, and table toolbars.
+- [x] Add empty‑state components with short guidance text.
 
 ## Phase 1 — Onboarding & First‑Run Clarity
 - [x] Add a first‑run checklist widget (Account → Categories → Transaction → Budget).
