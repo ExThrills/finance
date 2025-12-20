@@ -31,6 +31,11 @@ This document defines how the Codex CLI should behave in this repository.
 - Implement phases in order unless explicitly told to skip.
 - After each phase, mark it complete in `Ui/UX-V2-TODO.md`.
 
+## TODO Files & Archiving
+- Create separate TODO/feature/update docs for each initiative (e.g., UI/UX, feature phases).
+- Keep active work in a WIP/active location.
+- When all phases are complete, move the doc(s) into `Ui/Complete`.
+
 ## Setup Hub / Simplified Onboarding
 - Use `Ui/simplify.md` as the detailed spec.
 - Keep the Setup Hub as the central entry point for new users.
