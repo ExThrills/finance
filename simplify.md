@@ -1,49 +1,114 @@
 # Simplified Onboarding Hub
 
-This document proposes a simplified, centralized entry point for users to set up their financial workspace without juggling multiple screens. The goal is to make first-time setup obvious and fast, while keeping advanced tools available when needed.
+This document defines a simplified, centralized setup flow so new users can get started quickly without losing access to advanced tools. The core idea is a single "Setup Hub" screen that handles all account creation and starting balances with progressive disclosure for power features.
 
 ## Goals
 - Provide one clear place to add accounts and starting balances.
-- Minimize decision fatigue for new users.
+- Minimize decision fatigue for first-time users.
 - Preserve advanced capabilities for power users without blocking the basics.
-- Make setup feel like a guided flow, not a maze of options.
+- Keep setup under 2 minutes for typical users.
 
-## Proposed Structure: "Setup Hub"
-A single, focused screen that includes:
+## Guiding Principles
+- Progressive disclosure: show the minimum to complete setup, expand only when needed.
+- One primary action per screen.
+- Defaults that make sense for typical users.
+- Safe fallbacks: allow skipping non-critical fields.
 
-1) Accounts & Balances
-- Add checking/savings/credit accounts in one list.
-- Each account row includes:
-  - Account name
-  - Type (checking, savings, credit, cash, other)
-  - Starting balance (required for checking/savings)
+## Setup Hub: Information Architecture
+The Setup Hub is a single page, broken into four sections:
+
+1) Accounts & Balances (required)
+- Multi-row table-like layout so users can add multiple accounts in one place.
+- Each row captures:
+  - Account name (required)
+  - Account type (required; checking, savings, credit, cash, investment, other)
+  - Starting balance (required for non-credit)
   - Credit limit (required for credit)
   - Optional: institution, last 4
-- Support multiple accounts and multiple credit cards.
+- Actions:
+  - Add another account
+  - Remove a row
 
-2) Optional Advanced Details (collapsed by default)
-- APR, statement close/due, rewards currency, sync status.
-- Advanced users can expand this without cluttering the main flow.
+2) Advanced details (collapsed by default)
+- Expand per account row only if needed.
+- Fields:
+  - APR
+  - Statement close day
+  - Statement due day
+  - Rewards currency
+  - Sync status (read-only for now)
 
-3) Quick Review
-- Show a summary of total cash on hand, total credit limits, and total utilization (if applicable).
-- Confirm before saving.
+3) Quick review
+- Summary totals:
+  - Total cash on hand
+  - Total credit limits
+  - Overall utilization (if credit accounts exist)
+- Designed to catch errors before save.
 
-4) Next Step Button
-- Clear action: "Continue to transactions" or "Finish setup".
+4) Primary action
+- "Finish setup" (saves accounts and moves to Transactions)
+- Secondary: "Review accounts" or "Skip for now"
 
-## UX Notes
-- Use a stepper or checklist at top to show progress.
-- Keep only one primary action per screen.
-- Defer extra settings to "Advanced" toggles.
-- Provide a "Skip for now" option for non-critical details.
+## Field Requirements and Validation
+Per account row:
+- Account name: required, 1+ characters.
+- Type: required.
+- Starting balance:
+  - Required for checking, savings, cash, investment, other.
+  - Optional for credit (not required, default 0).
+- Credit limit:
+  - Required for credit.
+  - Not shown for non-credit types.
+- Last 4:
+  - Optional, exactly 4 digits when provided.
+- Statement close/due day:
+  - Optional, 1 to 31.
+- APR:
+  - Optional, non-negative.
+
+Inline validation behavior:
+- Show validation per row instead of global errors.
+- Use friendly copy: "Credit cards need a limit" not "Missing field."
+- Disable "Finish setup" until all required fields are valid.
+
+## Progressive Disclosure for Advanced Users
+- Advanced fields hidden by default to avoid clutter.
+- "Show advanced" toggle per row.
+- When expanded, add a short hint explaining when the fields matter.
+- Keep advanced fields editable later in Accounts to avoid blocking setup.
+
+## UX Flow Details
+- Stepper/checklist at top:
+  - Add accounts
+  - Review summary
+  - Finish setup
+- Each row has clear visual grouping and an "add another" button.
+- Use placeholders that show the expected format (e.g., 5000.00).
+- Use a single primary CTA at the bottom.
+
+## Advanced Tools Still Available
+- Full Accounts page remains accessible for edits and detailed fields.
+- Automation, Budgets, and Reconciliation remain visible in navigation.
+- Setup Hub should not replace advanced workflows, only streamline entry.
+
+## Edge Cases
+- User adds multiple accounts with mixed types:
+  - Validate each row independently.
+  - Allow save only when all rows are valid.
+- User leaves advanced fields blank:
+  - Safe defaults (nulls) should be stored.
+- User only adds credit accounts:
+  - Summary still shows utilization and limits.
+- User wants to skip setup:
+  - Allow "Skip for now" and return to Dashboard.
 
 ## Rollout Plan
-- Phase A: Build the Setup Hub UI for accounts + balances only.
-- Phase B: Add optional advanced toggles and review summary.
-- Phase C: Connect this hub to existing onboarding checklist flow.
+- Phase A: Accounts & balances only (single screen).
+- Phase B: Advanced toggles and summary totals.
+- Phase C: Integrate with first-run checklist and replace old entry points.
 
 ## Success Criteria
-- New users can complete setup in under 2 minutes.
-- Reduced drop-off during onboarding.
-- No loss of functionality for advanced users (advanced fields still accessible).
+- New users complete setup in under 2 minutes.
+- Lower onboarding drop-off rates.
+- Support tickets decrease around "where do I start?"
+- Advanced users can still access full account detail and rules without friction.
