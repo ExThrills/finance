@@ -3,8 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Lock } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +34,9 @@ export function ReconciliationClient() {
   const [periods, setPeriods] = useState<StatementPeriodSummary[]>([]);
   const [adjustments, setAdjustments] = useState<BalanceAdjustmentRecord[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEventRecord[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmPeriod, setConfirmPeriod] = useState<StatementPeriodSummary | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"lock" | "unlock">("lock");
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -35,6 +49,27 @@ export function ReconciliationClient() {
     () => accounts.find((account) => account.id === accountId) ?? null,
     [accounts, accountId]
   );
+
+  const latestPeriod = periods[0] ?? null;
+  const checklist = useMemo(() => {
+    return [
+      {
+        id: "dates",
+        label: "Confirm statement dates",
+        complete: Boolean(latestPeriod),
+      },
+      {
+        id: "pending",
+        label: "Review pending transactions",
+        complete: latestPeriod ? latestPeriod.pendingCount === 0 : false,
+      },
+      {
+        id: "lock",
+        label: "Lock statement",
+        complete: latestPeriod ? latestPeriod.locked : false,
+      },
+    ];
+  }, [latestPeriod]);
 
   const load = async (targetAccountId?: string) => {
     try {
@@ -123,6 +158,21 @@ export function ReconciliationClient() {
     }
   };
 
+  const openConfirm = (period: StatementPeriodSummary) => {
+    setConfirmPeriod(period);
+    setConfirmAction(period.locked ? "unlock" : "lock");
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!confirmPeriod) {
+      return;
+    }
+    await toggleLock(confirmPeriod);
+    setConfirmOpen(false);
+    setConfirmPeriod(null);
+  };
+
   const handleDelete = async (id: string) => {
     try {
       await fetchJson(`/api/reconciliation/periods/${id}`, { method: "DELETE" });
@@ -176,6 +226,24 @@ export function ReconciliationClient() {
           Track statement periods, lock reconciled ranges, and log adjustments.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Statement checklist</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {checklist.map((item) => (
+            <div key={item.id} className="flex items-center justify-between">
+              <span className={item.complete ? "text-muted-foreground line-through" : ""}>
+                {item.label}
+              </span>
+              <Badge variant={item.complete ? "secondary" : "outline"}>
+                {item.complete ? "Done" : "Next"}
+              </Badge>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -241,7 +309,7 @@ export function ReconciliationClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Statement checklist</CardTitle>
+          <CardTitle>Statement periods</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {periods.length === 0 ? (
@@ -252,19 +320,29 @@ export function ReconciliationClient() {
             periods.map((period) => (
               <div
                 key={period.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 px-4 py-3"
+                className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 px-4 py-3 ${
+                  period.locked ? "opacity-70" : ""
+                }`}
               >
                 <div>
-                  <p className="font-medium">
-                    {period.startDate} → {period.endDate}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    {period.locked ? <Lock className="h-4 w-4 text-muted-foreground" /> : null}
+                    <p className="font-medium">
+                      {period.startDate} → {period.endDate}
+                    </p>
+                    {period.locked ? (
+                      <Badge variant="secondary">Locked</Badge>
+                    ) : (
+                      <Badge variant="outline">Open</Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {period.totalCount} total · {period.clearedCount} cleared ·{" "}
                     {period.pendingCount} pending
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={() => toggleLock(period)}>
+                  <Button variant="outline" onClick={() => openConfirm(period)}>
                     {period.locked ? "Unlock" : "Lock"}
                   </Button>
                   <Button variant="ghost" onClick={() => handleDelete(period.id)}>
@@ -380,6 +458,29 @@ export function ReconciliationClient() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmAction === "lock" ? "Lock statement period" : "Unlock statement period"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmAction === "lock"
+                ? "Locking prevents edits to transactions within this period."
+                : "Unlocking reopens this period for edits."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm}>
+              {confirmAction === "lock" ? "Confirm lock" : "Confirm unlock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -49,9 +49,9 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Add toggles for: recurring only, include credit payments.
 
 ## Phase 8 — Reconciliation V2
-- [ ] Add step‑by‑step checklist UI.
-- [ ] Add lock state badges and dim locked periods.
-- [ ] Add confirmation modal for lock/unlock.
+- [x] Add step‑by‑step checklist UI.
+- [x] Add lock state badges and dim locked periods.
+- [x] Add confirmation modal for lock/unlock.
 
 ## Phase 9 — Automation V2
 - [ ] Add rule templates (Gas, Rideshare, Groceries).
