@@ -307,7 +307,9 @@ export function AccountsClient() {
         </CardHeader>
         <CardContent className="space-y-3">
           {accounts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No accounts yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No accounts yet. Add checking and credit cards to power utilization.
+            </p>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {accounts.map((account) => {

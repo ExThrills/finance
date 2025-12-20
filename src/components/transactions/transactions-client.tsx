@@ -591,14 +591,20 @@ export function TransactionsClient() {
         }}
       />
 
-      <TransactionsTable
-        data={filteredTransactions}
-        accounts={accounts}
-        categories={categories}
-        onUpdate={handleUpdate}
-        onDelete={handleDelete}
-        loading={loading}
-      />
+      {loading || transactions.length > 0 ? (
+        <TransactionsTable
+          data={filteredTransactions}
+          accounts={accounts}
+          categories={categories}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+          loading={loading}
+        />
+      ) : (
+        <div className="rounded-2xl border bg-muted/20 p-6 text-sm text-muted-foreground">
+          No transactions yet. Add your first one or paste a bank CSV and we'll map fields.
+        </div>
+      )}
     </div>
   );
 }

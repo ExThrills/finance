@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Bar,
   BarChart,
@@ -15,13 +16,20 @@ import {
   YAxis,
   Cell,
 } from "recharts";
+import { CheckCircle2, Circle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchJson } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format";
-import type { AccountRecord, TransactionWithRelations } from "@/types/finance";
+import type {
+  AccountRecord,
+  BudgetWithActuals,
+  CategoryRecord,
+  TransactionWithRelations,
+} from "@/types/finance";
 import { useAccountScope } from "@/components/account-scope-context";
 
 const palette = ["#0f172a", "#334155", "#f59e0b", "#10b981", "#ef4444"];
@@ -35,24 +43,41 @@ export function DashboardClient() {
   const [month, setMonth] = useState(() => monthKey(new Date()));
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>([]);
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
+  const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [budgets, setBudgets] = useState<BudgetWithActuals[]>([]);
+  const [loadingSampleData, setLoadingSampleData] = useState(false);
+  const [nextStepsDismissed, setNextStepsDismissed] = useState(false);
   const { scope } = useAccountScope();
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [txData, accountsData] = await Promise.all([
+  const loadDashboard = useCallback(async () => {
+    try {
+      const [txData, accountsData, categoriesData, budgetsData] =
+        await Promise.all([
           fetchJson<TransactionWithRelations[]>("/api/transactions"),
           fetchJson<AccountRecord[]>("/api/accounts"),
+          fetchJson<CategoryRecord[]>("/api/categories"),
+          fetchJson<BudgetWithActuals[]>("/api/budgets"),
         ]);
-        setTransactions(txData);
-        setAccounts(accountsData);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to load dashboard.";
-        toast.error(message);
-      }
-    };
-    load();
+      setTransactions(txData);
+      setAccounts(accountsData);
+      setCategories(categoriesData);
+      setBudgets(budgetsData);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load dashboard.";
+      toast.error(message);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    const dismissed = window.localStorage.getItem("dashboardNextStepsDismissed");
+    if (dismissed === "true") {
+      setNextStepsDismissed(true);
+    }
   }, []);
 
   const monthOptions = useMemo(() => {
@@ -223,6 +248,63 @@ export function DashboardClient() {
     return map;
   }, [scopedTransactions]);
 
+  const checklistItems = useMemo(
+    () => [
+      {
+        id: "account",
+        label: "Add your first account",
+        complete: accounts.length > 0,
+      },
+      {
+        id: "category",
+        label: "Add categories",
+        complete: categories.length > 0,
+      },
+      {
+        id: "transaction",
+        label: "Add your first transaction",
+        complete: transactions.length > 0,
+      },
+      {
+        id: "budget",
+        label: "Create a budget",
+        complete: budgets.length > 0,
+        optional: true,
+      },
+    ],
+    [accounts.length, budgets.length, categories.length, transactions.length]
+  );
+
+  const checklistCompleteCount = checklistItems.filter((item) => item.complete).length;
+  const checklistComplete = checklistItems.every(
+    (item) => item.complete || item.optional === true
+  );
+  const canLoadSampleData =
+    accounts.length === 0 &&
+    categories.length === 0 &&
+    transactions.length === 0 &&
+    budgets.length === 0;
+
+  const handleLoadSampleData = async () => {
+    setLoadingSampleData(true);
+    try {
+      await fetchJson("/api/sample-data", { method: "POST" });
+      toast.success("Sample data loaded.");
+      await loadDashboard();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load sample data.";
+      toast.error(message);
+    } finally {
+      setLoadingSampleData(false);
+    }
+  };
+
+  const handleDismissNextSteps = () => {
+    setNextStepsDismissed(true);
+    window.localStorage.setItem("dashboardNextStepsDismissed", "true");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -248,6 +330,82 @@ export function DashboardClient() {
           </Select>
         </div>
       </div>
+
+      {!checklistComplete ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>First-run checklist</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {checklistCompleteCount} of {checklistItems.length} complete
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2 text-sm">
+              {checklistItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    {item.complete ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className={item.complete ? "text-muted-foreground line-through" : ""}>
+                      {item.label}
+                    </span>
+                    {item.optional ? (
+                      <span className="text-xs text-muted-foreground">(optional)</span>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3 text-sm">
+              <div>
+                Prefer a guided tour? Load a safe set of sample accounts and transactions.
+                {!canLoadSampleData ? " Sample data is only available for empty workspaces." : ""}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleLoadSampleData}
+                disabled={!canLoadSampleData || loadingSampleData}
+              >
+                {loadingSampleData ? "Loading..." : "Load sample data"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {!nextStepsDismissed ? (
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>What to do next</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Keep going with the next high-impact actions.
+              </p>
+            </div>
+            <Button type="button" variant="ghost" size="sm" onClick={handleDismissNextSteps}>
+              Dismiss
+            </Button>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/accounts">Add an account</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/categories">Add categories</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/transactions">Add a transaction</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/budgets">Create a budget</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>

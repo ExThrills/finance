@@ -219,7 +219,9 @@ export function BudgetsClient() {
         </CardHeader>
         <CardContent className="space-y-3">
           {budgets.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No budgets yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No budgets yet. Start with one category to see progress at a glance.
+            </p>
           ) : (
             budgets.map((budget) => {
               const percent = Math.min(budget.percentUsed, 200);
