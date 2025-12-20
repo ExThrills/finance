@@ -9,10 +9,10 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [ ] Add empty‑state components with short guidance text.
 
 ## Phase 1 — Onboarding & First‑Run Clarity
-- [ ] Add a first‑run checklist widget (Account → Categories → Transaction → Budget).
-- [ ] Show contextual hints in empty lists (Accounts, Transactions, Budgets).
-- [ ] Add “Load sample data” action (optional toggle).
-- [ ] Add a dismissible “What to do next” panel on Dashboard.
+- [x] Add a first‑run checklist widget (Account → Categories → Transaction → Budget).
+- [x] Show contextual hints in empty lists (Accounts, Transactions, Budgets).
+- [x] Add “Load sample data” action (optional toggle).
+- [x] Add a dismissible “What to do next” panel on Dashboard.
 
 ## Phase 2 — Navigation & Global Actions
 - [ ] Add persistent top bar with scope switcher + primary action.
