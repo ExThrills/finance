@@ -16,9 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Toolbar } from "@/components/ui/toolbar";
 import { fetchJson } from "@/lib/api-client";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatShortDate } from "@/lib/format";
 import type {
   AccountRecord,
   PayoffPlan,
@@ -37,6 +39,9 @@ export function ProjectionsClient() {
   const [suggestions, setSuggestions] = useState<RecurringSuggestion[]>([]);
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [horizonDays, setHorizonDays] = useState(90);
+  const [includeCreditPayments, setIncludeCreditPayments] = useState(true);
+  const [recurringOnly, setRecurringOnly] = useState(false);
 
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -50,14 +55,11 @@ export function ProjectionsClient() {
 
   const load = async () => {
     try {
-      const [timelineData, seriesData, accountsData, categoriesData] =
-        await Promise.all([
-          fetchJson<ProjectionPoint[]>("/api/projections"),
-          fetchJson<RecurringSeriesRecord[]>("/api/recurring"),
-          fetchJson<AccountRecord[]>("/api/accounts"),
-          fetchJson<CategoryRecord[]>("/api/categories"),
-        ]);
-      setTimeline(timelineData);
+      const [seriesData, accountsData, categoriesData] = await Promise.all([
+        fetchJson<RecurringSeriesRecord[]>("/api/recurring"),
+        fetchJson<AccountRecord[]>("/api/accounts"),
+        fetchJson<CategoryRecord[]>("/api/categories"),
+      ]);
       setSeries(seriesData);
       setAccounts(accountsData);
       setCategories(categoriesData);
@@ -68,9 +70,31 @@ export function ProjectionsClient() {
     }
   };
 
+  const loadTimeline = async () => {
+    try {
+      const params = new URLSearchParams({
+        horizonDays: String(horizonDays),
+        includeCreditPayments: String(includeCreditPayments),
+        recurringOnly: String(recurringOnly),
+      });
+      const timelineData = await fetchJson<ProjectionPoint[]>(
+        `/api/projections?${params.toString()}`
+      );
+      setTimeline(timelineData);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load projections.";
+      toast.error(message);
+    }
+  };
+
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    loadTimeline();
+  }, [horizonDays, includeCreditPayments, recurringOnly]);
 
   const creditAccounts = useMemo(
     () => accounts.filter((account) => account.type === "credit"),
@@ -149,6 +173,17 @@ export function ProjectionsClient() {
       schedule,
     };
   }, [creditAccounts, extraPayment, strategy]);
+
+  const lowestProjection = useMemo(() => {
+    if (!timeline.length) {
+      return null;
+    }
+    return timeline.reduce(
+      (lowest, point) =>
+        point.balance < lowest.balance ? point : lowest,
+      timeline[0]
+    );
+  }, [timeline]);
 
   const handleCreateSeries = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -255,33 +290,80 @@ export function ProjectionsClient() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Cash Flow & Projections</h1>
-        <p className="text-sm text-muted-foreground">
-          Model recurring flows, projected cash curve, and payoff scenarios.
-        </p>
-      </div>
+      <PageHeader
+        title="Cash Flow & Projections"
+        description="Model recurring flows, projected cash curve, and payoff scenarios."
+      />
+
+      <Toolbar className="px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {[30, 60, 90, 180].map((days) => (
+            <Button
+              key={days}
+              type="button"
+              size="sm"
+              variant={horizonDays === days ? "default" : "outline"}
+              onClick={() => setHorizonDays(days)}
+            >
+              {days} days
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={includeCreditPayments ? "default" : "outline"}
+            onClick={() => setIncludeCreditPayments((prev) => !prev)}
+          >
+            Include credit payments
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={recurringOnly ? "default" : "outline"}
+            onClick={() => setRecurringOnly((prev) => !prev)}
+          >
+            Recurring only
+          </Button>
+        </div>
+      </Toolbar>
 
       <Card>
         <CardHeader>
-          <CardTitle>Projected cash curve (90 days)</CardTitle>
+          <CardTitle>Projected cash curve ({horizonDays} days)</CardTitle>
         </CardHeader>
-        <CardContent className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={timeline}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" hide />
-              <YAxis tickFormatter={(value) => `$${value / 100}`} />
-              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-              <Line
-                type="monotone"
-                dataKey="balance"
-                stroke="#0f172a"
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <CardContent className="space-y-4">
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={timeline}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" hide />
+                <YAxis tickFormatter={(value) => `$${value / 100}`} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Line
+                  type="monotone"
+                  dataKey="balance"
+                  stroke="#0f172a"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 px-4 py-3 text-sm">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Projected lowest balance
+              </p>
+              <p className="text-lg font-semibold">
+                {lowestProjection ? formatCurrency(lowestProjection.balance) : "—"}
+              </p>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {lowestProjection ? formatShortDate(lowestProjection.date) : ""}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

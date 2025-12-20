@@ -14,10 +14,20 @@ function addDays(date: Date, days: number) {
   return copy;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const userId = await getCurrentUserId();
-    const horizonDays = 90;
+    const { searchParams } = new URL(request.url);
+    const horizonParam = searchParams.get("horizonDays");
+    const includeCreditParam = searchParams.get("includeCreditPayments");
+    const recurringOnlyParam = searchParams.get("recurringOnly");
+    const parsedHorizon = horizonParam ? Number.parseInt(horizonParam, 10) : 90;
+    const horizonDays =
+      Number.isNaN(parsedHorizon) || parsedHorizon <= 0
+        ? 90
+        : Math.min(parsedHorizon, 180);
+    const includeCreditPayments = includeCreditParam !== "false";
+    const recurringOnly = recurringOnlyParam === "true";
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const end = addDays(start, horizonDays);
@@ -78,18 +88,20 @@ export async function GET() {
         item.next_date = toDateString(nextDate);
       });
 
-      creditAccounts.forEach((account) => {
-        if (!account.statement_due_day) {
-          return;
-        }
-        if (currentDate.getDate() !== account.statement_due_day) {
-          return;
-        }
-        const payment = Math.abs(account.current_balance);
-        if (payment > 0) {
-          balance -= payment;
-        }
-      });
+      if (!recurringOnly && includeCreditPayments) {
+        creditAccounts.forEach((account) => {
+          if (!account.statement_due_day) {
+            return;
+          }
+          if (currentDate.getDate() !== account.statement_due_day) {
+            return;
+          }
+          const payment = Math.abs(account.current_balance);
+          if (payment > 0) {
+            balance -= payment;
+          }
+        });
+      }
 
       timeline.push({ date: currentDateString, balance });
     }

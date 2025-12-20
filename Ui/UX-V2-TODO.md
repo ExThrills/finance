@@ -44,9 +44,9 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Improve progress bar color thresholds.
 
 ## Phase 7 — Projections V2
-- [ ] Add time horizon toggles (30/60/90/180 days).
-- [ ] Add “Lowest projected balance” callout.
-- [ ] Add toggles for: recurring only, include credit payments.
+- [x] Add time horizon toggles (30/60/90/180 days).
+- [x] Add “Lowest projected balance” callout.
+- [x] Add toggles for: recurring only, include credit payments.
 
 ## Phase 8 — Reconciliation V2
 - [ ] Add step‑by‑step checklist UI.
