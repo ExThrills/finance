@@ -54,9 +54,9 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Add confirmation modal for lock/unlock.
 
 ## Phase 9 — Automation V2
-- [ ] Add rule templates (Gas, Rideshare, Groceries).
-- [ ] Add drag‑to‑reorder priority.
-- [ ] Add preview panel showing what rules will match.
+- [x] Add rule templates (Gas, Rideshare, Groceries).
+- [x] Add drag‑to‑reorder priority.
+- [x] Add preview panel showing what rules will match.
 
 ## Phase 10 — Alerts V2
 - [ ] Convert alerts list into timeline layout.

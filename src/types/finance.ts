@@ -259,6 +259,11 @@ export type AutomationRuleRecord = {
   matchCategoryId: string | null;
   createdAt: string;
   actions?: RuleActionRecord[];
+  preview?: {
+    name: string;
+    amount: number;
+    accountName: string;
+  } | null;
 };
 
 export type TransferSuggestion = {

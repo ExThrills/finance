@@ -3,8 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { ArrowDown, ArrowUp } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -80,6 +84,69 @@ export function AutomationClient() {
   const [onlyUncategorized, setOnlyUncategorized] = useState(true);
   const [priority, setPriority] = useState("0");
   const [actions, setActions] = useState<ActionDraft[]>([]);
+
+  const templates = useMemo(
+    () => [
+      {
+        label: "Gas stations",
+        description: "Auto-categorize gas purchases.",
+        matchDescription: "gas",
+        categoryName: "Gas",
+      },
+      {
+        label: "Rideshare",
+        description: "Auto-categorize rideshare trips.",
+        matchDescription: "uber",
+        categoryName: "Rideshare",
+      },
+      {
+        label: "Groceries",
+        description: "Auto-categorize grocery runs.",
+        matchDescription: "grocery",
+        categoryName: "Groceries",
+      },
+    ],
+    []
+  );
+
+  const applyTemplate = (template: (typeof templates)[number]) => {
+    const category =
+      categories.find((item) => item.name === template.categoryName) ??
+      categories.find((item) => item.kind === "expense") ??
+      null;
+    setName(template.label);
+    setMatchDescription(template.matchDescription);
+    setOnlyUncategorized(true);
+    setActions(
+      category
+        ? [{ id: `action-${template.label}`, type: "set_category", categoryId: category.id }]
+        : []
+    );
+  };
+
+  const previewRule = (rule: AutomationRuleRecord) => {
+    const account = accounts.find((item) => item.id === rule.matchAccountId);
+    const accountName = account ? account.name : "Any account";
+    const range =
+      rule.matchAmountMin || rule.matchAmountMax
+        ? `${rule.matchAmountMin ? formatCurrency(rule.matchAmountMin) : "Any"} to ${
+            rule.matchAmountMax ? formatCurrency(rule.matchAmountMax) : "Any"
+          }`
+        : "Any amount";
+    return {
+      name: rule.matchDescription
+        ? `Contains "${rule.matchDescription}"`
+        : rule.onlyUncategorized
+        ? "Uncategorized transactions"
+        : "Any transaction",
+      accountName: `${accountName} · ${range}`,
+    };
+  };
+
+  const sortedRules = useMemo(
+    () => [...rules].sort((a, b) => b.priority - a.priority),
+    [rules]
+  );
 
   const expenseCategories = useMemo(
     () => categories.filter((category) => category.kind === "expense"),
@@ -315,19 +382,69 @@ export function AutomationClient() {
     }
   };
 
+  const moveRule = async (rule: AutomationRuleRecord, direction: "up" | "down") => {
+    const ordered = [...sortedRules];
+    const index = ordered.findIndex((item) => item.id === rule.id);
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (index < 0 || swapIndex < 0 || swapIndex >= ordered.length) {
+      return;
+    }
+    const swapped = [...ordered];
+    [swapped[index], swapped[swapIndex]] = [swapped[swapIndex], swapped[index]];
+    const next = swapped.map((item, i) => ({
+      ...item,
+      priority: swapped.length - i,
+    }));
+    setRules(next);
+    try {
+      await Promise.all([
+        fetchJson(`/api/rules/${next[index].id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ priority: next[index].priority }),
+        }),
+        fetchJson(`/api/rules/${next[swapIndex].id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ priority: next[swapIndex].priority }),
+        }),
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to reorder rule.";
+      toast.error(message);
+      await load();
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Automation</h1>
-          <p className="text-sm text-muted-foreground">
-            Create rules to auto-categorize and tag transactions.
-          </p>
-        </div>
-        <Button variant="outline" onClick={applyRules}>
-          Apply rules to uncategorized
-        </Button>
-      </div>
+      <PageHeader
+        title="Automation"
+        description="Create rules to auto-categorize and tag transactions."
+        actions={
+          <Button variant="outline" onClick={applyRules}>
+            Apply rules to uncategorized
+          </Button>
+        }
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Rule templates</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          {templates.map((template) => (
+            <button
+              key={template.label}
+              type="button"
+              className="rounded-lg border bg-muted/20 p-4 text-left transition hover:bg-muted/30"
+              onClick={() => applyTemplate(template)}
+            >
+              <p className="font-semibold">{template.label}</p>
+              <p className="text-xs text-muted-foreground">{template.description}</p>
+            </button>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -599,10 +716,15 @@ export function AutomationClient() {
           <CardTitle>Active rules</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {rules.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No rules yet.</p>
+          {sortedRules.length === 0 ? (
+            <EmptyState
+              title="No rules yet"
+              description="Create your first automation rule or pick a template."
+            />
           ) : (
-            rules.map((rule) => (
+            sortedRules.map((rule, index) => {
+              const preview = previewRule(rule);
+              return (
               <div
                 key={rule.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 px-4 py-3"
@@ -612,6 +734,9 @@ export function AutomationClient() {
                   <p className="text-xs text-muted-foreground">
                     Priority {rule.priority} · {rule.enabled ? "enabled" : "disabled"}
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    Preview: {preview.name} · {preview.accountName}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {rule.matchDescription ? <span>desc: {rule.matchDescription}</span> : null}
@@ -619,6 +744,24 @@ export function AutomationClient() {
                   {rule.matchAmountMax ? <span>max: {formatCurrency(rule.matchAmountMax)}</span> : null}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={index === 0}
+                    onClick={() => moveRule(rule, "up")}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={index === sortedRules.length - 1}
+                    onClick={() => moveRule(rule, "down")}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
                   <Button variant="outline" onClick={() => handleToggle(rule)}>
                     {rule.enabled ? "Disable" : "Enable"}
                   </Button>
@@ -627,7 +770,8 @@ export function AutomationClient() {
                   </Button>
                 </div>
               </div>
-            ))
+            );
+            })
           )}
         </CardContent>
       </Card>
