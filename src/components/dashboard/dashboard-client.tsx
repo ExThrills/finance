@@ -493,6 +493,9 @@ export function DashboardClient() {
               <Link href="/accounts">Add an account</Link>
             </Button>
             <Button asChild variant="outline">
+              <Link href="/setup">Open setup hub</Link>
+            </Button>
+            <Button asChild variant="outline">
               <Link href="/categories">Add categories</Link>
             </Button>
             <Button asChild variant="outline">

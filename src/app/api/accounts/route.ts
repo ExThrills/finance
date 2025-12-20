@@ -38,6 +38,18 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    const startingBalance = parsed.data.startingBalance ?? null;
+    const creditLimit = parsed.data.creditLimit ?? null;
+    const currentBalance = startingBalance !== null ? startingBalance : undefined;
+    const availableBalance =
+      parsed.data.type !== "credit" && startingBalance !== null
+        ? startingBalance
+        : undefined;
+    const availableCredit =
+      parsed.data.type === "credit" && creditLimit !== null
+        ? creditLimit - Math.abs(startingBalance ?? 0)
+        : undefined;
+
     const { data, error } = await supabaseAdmin
       .from("accounts")
       .insert({
@@ -46,7 +58,10 @@ export async function POST(request: Request) {
         type: parsed.data.type,
         institution: parsed.data.institution ?? null,
         last4: parsed.data.last4 ?? null,
-        credit_limit: parsed.data.creditLimit ?? null,
+        credit_limit: creditLimit,
+        current_balance: currentBalance,
+        available_balance: availableBalance,
+        available_credit: availableCredit,
         apr: parsed.data.apr ?? null,
         statement_close_day: parsed.data.statementCloseDay ?? null,
         statement_due_day: parsed.data.statementDueDay ?? null,

@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   Landmark,
   Layers,
+  LayoutList,
   LineChart,
   Sparkles,
   ShieldAlert,
@@ -22,6 +23,7 @@ const navGroups = [
     label: "Core",
     items: [
       { href: "/", label: "Dashboard", icon: BarChart3 },
+      { href: "/setup", label: "Setup Hub", icon: LayoutList },
       { href: "/transactions", label: "Transactions", icon: ClipboardList },
       { href: "/accounts", label: "Accounts", icon: Landmark },
       { href: "/categories", label: "Categories", icon: Layers },

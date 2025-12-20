@@ -25,6 +25,7 @@ export const accountSchema = z.object({
   institution: z.string().min(1).optional(),
   last4: z.string().length(4).optional(),
   creditLimit: z.number().int().nonnegative().optional(),
+  startingBalance: z.number().int().optional(),
   apr: z.number().nonnegative().optional(),
   statementCloseDay: z.number().int().min(1).max(31).optional(),
   statementDueDay: z.number().int().min(1).max(31).optional(),
