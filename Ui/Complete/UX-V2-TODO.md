@@ -1,3 +1,5 @@
+All updates have been implemented.
+
 # UX V2 Implementation Plan
 
 This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped to ship independently.
