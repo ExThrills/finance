@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchJson } from "@/lib/api-client";
+import { chartAccent, chartPalette, chartPrimary } from "@/lib/chart-colors";
 import { formatCurrency } from "@/lib/format";
 import type {
   AccountRecord,
@@ -34,8 +35,6 @@ import type {
   TransactionWithRelations,
 } from "@/types/finance";
 import { useAccountScope } from "@/components/account-scope-context";
-
-const palette = ["#0f172a", "#334155", "#f59e0b", "#10b981", "#ef4444"];
 
 function monthKey(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -534,9 +533,12 @@ export function DashboardClient() {
 
       <div className={`grid gap-6 ${chartGridClass}`}>
         <Card>
-          <CardHeader>
-            <CardTitle>Spending by category</CardTitle>
-          </CardHeader>
+        <CardHeader>
+          <CardTitle>Spending by category</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Total expenses: {formatCurrency(expenseTotal)}
+          </p>
+        </CardHeader>
           <CardContent className="space-y-3">
             <div className="h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -549,14 +551,14 @@ export function DashboardClient() {
                     outerRadius={110}
                     paddingAngle={3}
                   >
-                    {pieData.map((entry, index) => (
-                      <Cell
-                        key={`${entry.name}-${index}`}
-                        fill={palette[index % palette.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  {pieData.map((entry, index) => (
+                    <Cell
+                      key={`${entry.name}-${index}`}
+                      fill={chartPalette[index % chartPalette.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -569,7 +571,7 @@ export function DashboardClient() {
                     <div className="flex items-center gap-2">
                       <span
                         className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: palette[index % palette.length] }}
+                        style={{ backgroundColor: chartPalette[index % chartPalette.length] }}
                       />
                       <span>{entry.name}</span>
                     </div>
@@ -582,9 +584,12 @@ export function DashboardClient() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Monthly cashflow</CardTitle>
-          </CardHeader>
+        <CardHeader>
+          <CardTitle>Monthly cashflow</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Net for {monthOptions.find((option) => option.value === month)?.label ?? "this month"}
+          </p>
+        </CardHeader>
           <CardContent className="space-y-3">
             <div className="h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -593,13 +598,13 @@ export function DashboardClient() {
                   <XAxis dataKey="day" />
                   <YAxis tickFormatter={(value) => `$${value / 100}`} />
                   <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Line
-                    type="monotone"
-                    dataKey="net"
-                    stroke="#0f172a"
-                    strokeWidth={2}
-                    dot={false}
-                  />
+                <Line
+                  type="monotone"
+                  dataKey="net"
+                  stroke={chartPrimary}
+                  strokeWidth={2}
+                  dot={false}
+                />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -618,9 +623,12 @@ export function DashboardClient() {
 
         {budgets.length > 0 ? (
           <Card>
-            <CardHeader>
-              <CardTitle>Budget burn-down</CardTitle>
-            </CardHeader>
+        <CardHeader>
+          <CardTitle>Budget burn-down</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {budgetPreview.length} active budgets
+          </p>
+        </CardHeader>
             <CardContent className="space-y-4">
               {budgetPreview.map((budget) => {
                 const percent = Math.min(budget.percentUsed, 200);
@@ -658,6 +666,9 @@ export function DashboardClient() {
       <Card>
         <CardHeader>
           <CardTitle>Income vs expenses</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {formatCurrency(incomeTotal)} in · {formatCurrency(expenseTotal)} out
+          </p>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="h-[240px]">
@@ -667,7 +678,7 @@ export function DashboardClient() {
                 <XAxis dataKey="name" />
                 <YAxis tickFormatter={(value) => `$${value / 100}`} />
                 <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Bar dataKey="value" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" fill={chartAccent} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -685,6 +696,9 @@ export function DashboardClient() {
       <Card>
         <CardHeader>
           <CardTitle>Alerts timeline</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Latest {alertsPreview.length} alerts
+          </p>
         </CardHeader>
         <CardContent className="space-y-3">
           {alertsPreview.length === 0 ? (
@@ -801,9 +815,12 @@ export function DashboardClient() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Credit utilization</CardTitle>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle>Credit utilization</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              What is utilization? Balance divided by credit limit.
+            </p>
+          </CardHeader>
         <CardContent className="space-y-3">
           {creditAccounts.length === 0 ? (
             <p className="text-sm text-muted-foreground">

@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toolbar } from "@/components/ui/toolbar";
 import { fetchJson } from "@/lib/api-client";
+import { chartPrimary, chartAccent } from "@/lib/chart-colors";
 import { formatCurrency, formatShortDate } from "@/lib/format";
 import type {
   AccountRecord,
@@ -332,6 +333,9 @@ export function ProjectionsClient() {
       <Card>
         <CardHeader>
           <CardTitle>Projected cash curve ({horizonDays} days)</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Includes recurring series and optional credit payments.
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="h-[260px]">
@@ -344,7 +348,7 @@ export function ProjectionsClient() {
                 <Line
                   type="monotone"
                   dataKey="balance"
-                  stroke="#0f172a"
+                  stroke={chartPrimary}
                   strokeWidth={2}
                   dot={false}
                 />
@@ -523,6 +527,9 @@ export function ProjectionsClient() {
       <Card>
         <CardHeader>
           <CardTitle>Payoff simulator</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Visualize how extra payments impact total interest.
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">
@@ -580,7 +587,7 @@ export function ProjectionsClient() {
                     <Line
                       type="monotone"
                       dataKey="balance"
-                      stroke="#f59e0b"
+                      stroke={chartAccent}
                       strokeWidth={2}
                       dot={false}
                     />

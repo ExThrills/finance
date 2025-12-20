@@ -64,9 +64,9 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Add “Snooze” and “Acknowledge all”.
 
 ## Phase 11 — Data Visualization Polish
-- [ ] Standardize chart colors across pages.
-- [ ] Add legends with totals.
-- [ ] Add hover “What is this?” help on metrics (utilization, cashflow).
+- [x] Standardize chart colors across pages.
+- [x] Add legends with totals.
+- [x] Add hover “What is this?” help on metrics (utilization, cashflow).
 
 ## Phase 12 — Accessibility & QA
 - [ ] Verify contrast for small text.
