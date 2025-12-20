@@ -69,10 +69,10 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Add hover “What is this?” help on metrics (utilization, cashflow).
 
 ## Phase 12 — Accessibility & QA
-- [ ] Verify contrast for small text.
-- [ ] Ensure keyboard navigation works for all selects.
-- [ ] Add focus rings for interactive elements.
-- [ ] Validate empty states across all screens.
+- [x] Verify contrast for small text.
+- [x] Ensure keyboard navigation works for all selects.
+- [x] Add focus rings for interactive elements.
+- [x] Validate empty states across all screens.
 
 ## Notes
 - Each phase can be shipped independently.

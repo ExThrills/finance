@@ -375,7 +375,7 @@ export function AccountsClient() {
             <CardTitle>Account dashboard</CardTitle>
             <div className="flex items-center gap-3">
               {syncing ? (
-                <span className="text-xs text-muted-foreground">Syncing...</span>
+              <span className="text-xs text-muted-strong">Syncing...</span>
               ) : null}
               <Button
                 onClick={() => handleSync()}
@@ -431,7 +431,7 @@ export function AccountsClient() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-lg font-semibold">{account.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-strong">
                           {account.type} ·{" "}
                           {account.institution
                             ? account.institution
@@ -439,7 +439,7 @@ export function AccountsClient() {
                           {account.last4 ? `· ${account.last4}` : ""}
                         </p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-strong">
                         <div className="text-foreground">{sparkline}</div>
                         <Badge
                           variant="secondary"
@@ -466,13 +466,13 @@ export function AccountsClient() {
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <div>
-                        <p className="text-xs text-muted-foreground">Balance</p>
+                        <p className="text-xs text-muted-strong">Balance</p>
                         <p className="text-lg font-semibold">
                           {formatCurrency(balance)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-strong">
                           {isCredit ? "Available credit" : "Available"}
                         </p>
                         <p className="text-lg font-semibold">
@@ -480,7 +480,7 @@ export function AccountsClient() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-strong">
                           Statement close
                         </p>
                         <p className="font-medium">
@@ -488,7 +488,7 @@ export function AccountsClient() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-strong">
                           Statement due
                         </p>
                         <p className="font-medium">
@@ -496,7 +496,7 @@ export function AccountsClient() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Last updated</p>
+                        <p className="text-xs text-muted-strong">Last updated</p>
                         <p className="font-medium">
                           {formatRelative(account.lastSyncAt)}
                         </p>
@@ -504,7 +504,7 @@ export function AccountsClient() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-muted-strong">
                         Sync health:{" "}
                         <span title={account.syncError ?? ""}>
                           {account.syncError ? account.syncError : "All clear"}
@@ -519,7 +519,7 @@ export function AccountsClient() {
 
                     {utilization !== null ? (
                       <div className="mt-4">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between text-xs text-muted-strong">
                           <span>Utilization</span>
                           <span>{(utilization * 100).toFixed(1)}%</span>
                         </div>

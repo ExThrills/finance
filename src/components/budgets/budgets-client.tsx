@@ -155,7 +155,7 @@ export function BudgetsClient() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
               On track
             </p>
             <p className="text-2xl font-semibold text-emerald-700">
@@ -163,7 +163,7 @@ export function BudgetsClient() {
             </p>
           </div>
           <div className="rounded-lg border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
               At risk
             </p>
             <p className="text-2xl font-semibold text-amber-700">
@@ -171,7 +171,7 @@ export function BudgetsClient() {
             </p>
           </div>
           <div className="rounded-lg border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
               Over
             </p>
             <p className="text-2xl font-semibold text-rose-700">
@@ -343,7 +343,7 @@ export function BudgetsClient() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="font-medium">{budget.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-strong">
                         {budget.scopeType} · {budget.period} ·{" "}
                         {budget.periodStart} → {budget.periodEnd}
                       </p>
@@ -352,7 +352,7 @@ export function BudgetsClient() {
                       <p className="font-semibold">
                         {formatCurrency(budget.actualAmount)} / {formatCurrency(budget.targetAmount)}
                       </p>
-                      <p className="text-xs text-muted-foreground">{budget.percentUsed}% used</p>
+                      <p className="text-xs text-muted-strong">{budget.percentUsed}% used</p>
                     </div>
                   </div>
                   <div className="mt-3 h-2 w-full rounded-full bg-muted">

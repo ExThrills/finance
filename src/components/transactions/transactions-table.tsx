@@ -210,6 +210,7 @@ export function TransactionsTable({
         header: ({ table }) => (
           <input
             type="checkbox"
+            aria-label="Select all rows"
             checked={table.getIsAllPageRowsSelected()}
             onChange={(event) =>
               table.toggleAllPageRowsSelected(event.target.checked)
@@ -219,6 +220,7 @@ export function TransactionsTable({
         cell: ({ row }) => (
           <input
             type="checkbox"
+            aria-label={`Select transaction ${row.original.description}`}
             checked={row.getIsSelected()}
             onChange={(event) => row.toggleSelected(event.target.checked)}
           />

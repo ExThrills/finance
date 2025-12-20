@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchJson } from "@/lib/api-client";
@@ -392,14 +393,14 @@ export function DashboardClient() {
               Net cashflow
             </p>
             <p className="text-2xl font-semibold">{formatCurrency(netTotal)}</p>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <p className="text-xs text-muted-strong">This month</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
               Cash on hand
             </p>
             <p className="text-2xl font-semibold">{formatCurrency(cashOnHand)}</p>
-            <p className="text-xs text-muted-foreground">Checking + savings</p>
+            <p className="text-xs text-muted-strong">Checking + savings</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -408,7 +409,7 @@ export function DashboardClient() {
             <p className="text-2xl font-semibold">
               {totalLimit > 0 ? `${(overallUtilization * 100).toFixed(1)}%` : "—"}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-strong">
               {totalLimit > 0
                 ? `${formatCurrency(totalBalance)} / ${formatCurrency(totalLimit)}`
                 : "No credit limits"}
@@ -421,7 +422,7 @@ export function DashboardClient() {
             <p className="text-2xl font-semibold">
               {formatCurrency(upcomingBills.total)}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-strong">
               {upcomingBills.count} in next 7 days
             </p>
           </div>
@@ -450,7 +451,7 @@ export function DashboardClient() {
                       {item.label}
                     </span>
                     {item.optional ? (
-                      <span className="text-xs text-muted-foreground">(optional)</span>
+                      <span className="text-xs text-muted-strong">(optional)</span>
                     ) : null}
                   </div>
                 </div>
@@ -504,38 +505,45 @@ export function DashboardClient() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Income</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {formatCurrency(incomeTotal)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Expenses</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold text-rose-700">
-            {formatCurrency(expenseTotal)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Net</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {formatCurrency(netTotal)}
-          </CardContent>
-        </Card>
-      </div>
+      {transactions.length === 0 ? (
+        <EmptyState
+          title="No transactions yet"
+          description="Add a transaction to see income, expense, and cashflow insights."
+        />
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Income</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">
+              {formatCurrency(incomeTotal)}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Expenses</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold text-rose-700">
+              {formatCurrency(expenseTotal)}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Net</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">
+              {formatCurrency(netTotal)}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className={`grid gap-6 ${chartGridClass}`}>
         <Card>
         <CardHeader>
           <CardTitle>Spending by category</CardTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-strong">
             Total expenses: {formatCurrency(expenseTotal)}
           </p>
         </CardHeader>
@@ -562,7 +570,7 @@ export function DashboardClient() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="space-y-1 text-xs text-muted-foreground">
+            <div className="space-y-1 text-xs text-muted-strong">
               {topCategories.length === 0 ? (
                 <span>No expense categories yet.</span>
               ) : (
@@ -586,7 +594,7 @@ export function DashboardClient() {
         <Card>
         <CardHeader>
           <CardTitle>Monthly cashflow</CardTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-strong">
             Net for {monthOptions.find((option) => option.value === month)?.label ?? "this month"}
           </p>
         </CardHeader>
@@ -608,13 +616,13 @@ export function DashboardClient() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center justify-between text-xs text-muted-strong">
               <span>Net this month</span>
               <span className={netTotal < 0 ? "text-rose-700" : "text-emerald-700"}>
                 {formatCurrency(netTotal)}
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center justify-between text-xs text-muted-strong">
               <span>Avg daily</span>
               <span>{formatCurrency(averageDaily)}</span>
             </div>
@@ -625,7 +633,7 @@ export function DashboardClient() {
           <Card>
         <CardHeader>
           <CardTitle>Budget burn-down</CardTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-strong">
             {budgetPreview.length} active budgets
           </p>
         </CardHeader>
@@ -637,7 +645,7 @@ export function DashboardClient() {
                   <div key={budget.id} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{budget.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-strong">
                         {formatCurrency(remaining)} left
                       </span>
                     </div>
@@ -649,7 +657,7 @@ export function DashboardClient() {
                         style={{ width: `${percent}%` }}
                       />
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between text-xs text-muted-strong">
                       <span>
                         {formatCurrency(budget.actualAmount)} of {formatCurrency(budget.targetAmount)}
                       </span>
@@ -666,7 +674,7 @@ export function DashboardClient() {
       <Card>
         <CardHeader>
           <CardTitle>Income vs expenses</CardTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-strong">
             {formatCurrency(incomeTotal)} in · {formatCurrency(expenseTotal)} out
           </p>
         </CardHeader>
@@ -682,11 +690,11 @@ export function DashboardClient() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-strong">
             <span>Income</span>
             <span className="text-emerald-700">{formatCurrency(incomeTotal)}</span>
           </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-strong">
             <span>Expenses</span>
             <span className="text-rose-700">{formatCurrency(expenseTotal)}</span>
           </div>
@@ -696,7 +704,7 @@ export function DashboardClient() {
       <Card>
         <CardHeader>
           <CardTitle>Alerts timeline</CardTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-strong">
             Latest {alertsPreview.length} alerts
           </p>
         </CardHeader>
@@ -721,7 +729,7 @@ export function DashboardClient() {
                 >
                   <div className="space-y-1">
                     <p className="text-sm font-medium">{alert.message}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-strong">
                       {formatShortDate(alert.createdAt)}
                       {alert.acknowledgedAt ? " · Acknowledged" : ""}
                     </p>
@@ -757,7 +765,7 @@ export function DashboardClient() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-lg font-semibold">{account.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-strong">
                         {account.institution ?? "Unassigned"}
                         {account.last4 ? ` · ${account.last4}` : ""}
                       </p>
@@ -772,11 +780,11 @@ export function DashboardClient() {
                   </div>
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs text-muted-foreground">Balance</p>
+                      <p className="text-xs text-muted-strong">Balance</p>
                       <p className="font-semibold">{formatCurrency(balance)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-strong">
                         Available credit
                       </p>
                       <p className="font-semibold">
@@ -787,13 +795,13 @@ export function DashboardClient() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Rewards</p>
+                      <p className="text-xs text-muted-strong">Rewards</p>
                       <p className="font-semibold">
                         {account.rewardCurrency ?? "—"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-strong">
                         Statement due
                       </p>
                       <p className="font-semibold">
@@ -801,7 +809,7 @@ export function DashboardClient() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-3 text-xs text-muted-foreground">
+                  <div className="mt-3 text-xs text-muted-strong">
                     Recent activity:{" "}
                     {recent
                       ? `${recent.description} · ${formatCurrency(recent.amount)}`
@@ -817,7 +825,7 @@ export function DashboardClient() {
       <Card>
           <CardHeader>
             <CardTitle>Credit utilization</CardTitle>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-strong">
               What is utilization? Balance divided by credit limit.
             </p>
           </CardHeader>
@@ -831,7 +839,7 @@ export function DashboardClient() {
               <div className="flex items-center justify-between text-sm">
                 <div>
                   <span className="text-muted-foreground">Overall</span>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     {formatCurrency(totalBalance)} / {formatCurrency(totalLimit)}
                   </p>
                 </div>
@@ -858,7 +866,7 @@ export function DashboardClient() {
                     <div key={account.id} className="flex items-center justify-between py-2 text-sm">
                       <div>
                         <p className="font-medium">{account.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-strong">
                           {formatCurrency(balance)} / {formatCurrency(limit)}
                         </p>
                       </div>

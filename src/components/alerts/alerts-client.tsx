@@ -449,7 +449,7 @@ export function AlertsClient() {
               >
                 <div>
                   <p className="font-medium">{rule.name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     {rule.ruleType} · {rule.severity} · {rule.channel}
                   </p>
                 </div>
@@ -503,7 +503,7 @@ export function AlertsClient() {
                       <Badge className={severityClasses(severity)}>{severity}</Badge>
                       <p className="font-medium">{alert.message}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-strong">
                       {formatShortDate(alert.createdAt)} ·{" "}
                       {alert.rule?.ruleType ?? "general"}
                       {snoozed && alert.payload?.snoozedUntil
@@ -515,7 +515,7 @@ export function AlertsClient() {
                   </div>
                   <div className="flex items-center gap-2">
                     {alert.acknowledgedAt ? (
-                      <span className="text-xs text-muted-foreground">Acknowledged</span>
+                      <span className="text-xs text-muted-strong">Acknowledged</span>
                     ) : snoozed ? (
                       <Badge variant="secondary">Snoozed</Badge>
                     ) : (

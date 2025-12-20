@@ -336,7 +336,7 @@ export function ReconciliationClient() {
                       <Badge variant="outline">Open</Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     {period.totalCount} total · {period.clearedCount} cleared ·{" "}
                     {period.pendingCount} pending
                   </p>
@@ -416,11 +416,11 @@ export function ReconciliationClient() {
               >
                 <div>
                   <p className="font-medium">{formatCurrency(adjustment.amount)}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     {adjustment.effectiveDate} · {adjustment.memo ?? "No memo"}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-strong">
                   {new Date(adjustment.createdAt).toLocaleString()}
                 </span>
               </div>
@@ -448,7 +448,7 @@ export function ReconciliationClient() {
                   <p className="font-medium">
                     {event.entityType} · {event.action}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     {event.entityId ?? "System"} ·{" "}
                     {new Date(event.createdAt).toLocaleString()}
                   </p>

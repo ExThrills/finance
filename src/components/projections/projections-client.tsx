@@ -333,7 +333,7 @@ export function ProjectionsClient() {
       <Card>
         <CardHeader>
           <CardTitle>Projected cash curve ({horizonDays} days)</CardTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-strong">
             Includes recurring series and optional credit payments.
           </p>
         </CardHeader>
@@ -364,7 +364,7 @@ export function ProjectionsClient() {
                 {lowestProjection ? formatCurrency(lowestProjection.balance) : "—"}
               </p>
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-strong">
               {lowestProjection ? formatShortDate(lowestProjection.date) : ""}
             </div>
           </div>
@@ -478,7 +478,7 @@ export function ProjectionsClient() {
                 >
                   <div>
                     <p className="font-medium">{item.description}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-strong">
                       {item.cadence} · next {item.nextDate}
                     </p>
                   </div>
@@ -508,7 +508,7 @@ export function ProjectionsClient() {
               >
                 <div>
                   <p className="font-medium">{suggestion.description}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     {suggestion.cadence} · {suggestion.count} matches · next {suggestion.nextDate}
                   </p>
                 </div>
@@ -527,7 +527,7 @@ export function ProjectionsClient() {
       <Card>
         <CardHeader>
           <CardTitle>Payoff simulator</CardTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-strong">
             Visualize how extra payments impact total interest.
           </p>
         </CardHeader>

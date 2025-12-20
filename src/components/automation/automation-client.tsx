@@ -440,7 +440,7 @@ export function AutomationClient() {
               onClick={() => applyTemplate(template)}
             >
               <p className="font-semibold">{template.label}</p>
-              <p className="text-xs text-muted-foreground">{template.description}</p>
+              <p className="text-xs text-muted-strong">{template.description}</p>
             </button>
           ))}
         </CardContent>
@@ -731,14 +731,14 @@ export function AutomationClient() {
               >
                 <div>
                   <p className="font-medium">{rule.name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     Priority {rule.priority} · {rule.enabled ? "enabled" : "disabled"}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     Preview: {preview.name} · {preview.accountName}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-strong">
                   {rule.matchDescription ? <span>desc: {rule.matchDescription}</span> : null}
                   {rule.matchAmountMin ? <span>min: {formatCurrency(rule.matchAmountMin)}</span> : null}
                   {rule.matchAmountMax ? <span>max: {formatCurrency(rule.matchAmountMax)}</span> : null}
@@ -791,7 +791,7 @@ export function AutomationClient() {
               >
                 <div>
                   <p className="font-medium">{suggestion.reason}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-strong">
                     {formatCurrency(suggestion.amount)}
                   </p>
                 </div>
