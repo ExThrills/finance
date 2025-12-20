@@ -39,9 +39,9 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Add “Last updated” and sync health tooltip.
 
 ## Phase 6 — Budgets V2
-- [ ] Add “Budget health” overview (On track / At risk / Over).
-- [ ] Add filters (category, period).
-- [ ] Improve progress bar color thresholds.
+- [x] Add “Budget health” overview (On track / At risk / Over).
+- [x] Add filters (category, period).
+- [x] Improve progress bar color thresholds.
 
 ## Phase 7 — Projections V2
 - [ ] Add time horizon toggles (30/60/90/180 days).

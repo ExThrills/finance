@@ -28,6 +28,37 @@ export function BudgetsClient() {
   const [period, setPeriod] = useState<(typeof periodOptions)[number]>("monthly");
   const [targetAmount, setTargetAmount] = useState("");
 
+  const budgetHealth = useMemo(() => {
+    return budgets.reduce(
+      (acc, budget) => {
+        if (budget.percentUsed >= 100) {
+          acc.over += 1;
+        } else if (budget.percentUsed >= 80) {
+          acc.atRisk += 1;
+        } else {
+          acc.onTrack += 1;
+        }
+        return acc;
+      },
+      { onTrack: 0, atRisk: 0, over: 0 }
+    );
+  }, [budgets]);
+
+  const [filterScope, setFilterScope] = useState("");
+  const [filterPeriod, setFilterPeriod] = useState("");
+
+  const filteredBudgets = useMemo(() => {
+    return budgets.filter((budget) => {
+      if (filterScope && budget.scopeType !== filterScope) {
+        return false;
+      }
+      if (filterPeriod && budget.period !== filterPeriod) {
+        return false;
+      }
+      return true;
+    });
+  }, [budgets, filterPeriod, filterScope]);
+
   const relevantCategories = useMemo(
     () => categories.filter((category) => category.kind === "expense"),
     [categories]
@@ -117,6 +148,78 @@ export function BudgetsClient() {
         title="Budgets"
         description="Track targets by category or account with weekly or monthly periods."
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Budget health</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              On track
+            </p>
+            <p className="text-2xl font-semibold text-emerald-700">
+              {budgetHealth.onTrack}
+            </p>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              At risk
+            </p>
+            <p className="text-2xl font-semibold text-amber-700">
+              {budgetHealth.atRisk}
+            </p>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Over
+            </p>
+            <p className="text-2xl font-semibold text-rose-700">
+              {budgetHealth.over}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1">
+            <Label>Scope</Label>
+            <Select value={filterScope} onValueChange={setFilterScope}>
+              <SelectTrigger>
+                <SelectValue placeholder="All scopes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All scopes</SelectItem>
+                {scopeOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Period</Label>
+            <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+              <SelectTrigger>
+                <SelectValue placeholder="All periods" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All periods</SelectItem>
+                {periodOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -218,14 +321,20 @@ export function BudgetsClient() {
           <CardTitle>Active budgets</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {budgets.length === 0 ? (
+          {filteredBudgets.length === 0 ? (
             <EmptyState
               title="No budgets yet"
               description="Start with one category to see progress at a glance."
             />
           ) : (
-            budgets.map((budget) => {
+            filteredBudgets.map((budget) => {
               const percent = Math.min(budget.percentUsed, 200);
+              const barClass =
+                budget.percentUsed >= 100
+                  ? "bg-rose-500"
+                  : budget.percentUsed >= 80
+                  ? "bg-amber-500"
+                  : "bg-emerald-500";
               return (
                 <div
                   key={budget.id}
@@ -248,9 +357,7 @@ export function BudgetsClient() {
                   </div>
                   <div className="mt-3 h-2 w-full rounded-full bg-muted">
                     <div
-                      className={`h-2 rounded-full ${
-                        budget.percentUsed >= 100 ? "bg-rose-500" : "bg-emerald-500"
-                      }`}
+                      className={`h-2 rounded-full ${barClass}`}
                       style={{ width: `${percent}%` }}
                     />
                   </div>
