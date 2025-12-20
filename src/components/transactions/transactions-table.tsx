@@ -11,6 +11,7 @@ import {
 import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -266,17 +267,22 @@ export function TransactionsTable({
         accessorKey: "categoryId",
         header: "Category",
         cell: ({ row }) => (
-          <EditableSelectCell
-            value={row.original.categoryId ?? null}
-            placeholder="Uncategorized"
-            allowNull
-            nullLabel="Uncategorized"
-            options={categories.map((category) => ({
-              value: category.id,
-              label: category.name,
-            }))}
-            onCommit={(next) => onUpdate(row.original.id, { categoryId: next })}
-          />
+          <div className="space-y-1">
+            <EditableSelectCell
+              value={row.original.categoryId ?? null}
+              placeholder="Uncategorized"
+              allowNull
+              nullLabel="Uncategorized"
+              options={categories.map((category) => ({
+                value: category.id,
+                label: category.name,
+              }))}
+              onCommit={(next) => onUpdate(row.original.id, { categoryId: next })}
+            />
+            {row.original.ruleApplied ? (
+              <Badge variant="secondary">Rule: {row.original.ruleApplied}</Badge>
+            ) : null}
+          </div>
         ),
       },
       {

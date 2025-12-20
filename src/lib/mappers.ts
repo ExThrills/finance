@@ -259,6 +259,12 @@ export function toTransactionWithRelations(
     }[];
   }
 ): TransactionWithRelations {
+  const ruleNotePrefix = "Auto-categorized by rule:";
+  const ruleApplied =
+    row.notes && row.notes.startsWith(ruleNotePrefix)
+      ? row.notes.slice(ruleNotePrefix.length).trim() || null
+      : null;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -297,5 +303,6 @@ export function toTransactionWithRelations(
           )
           .filter((tag): tag is TagRecord => Boolean(tag))
       : [],
+    ruleApplied,
   };
 }

@@ -8,6 +8,7 @@ type RuleRow = Database["public"]["Tables"]["automation_rules"]["Row"] & {
 };
 
 const toDateString = (date: string) => new Date(date).toISOString().slice(0, 10);
+const ruleNotePrefix = "Auto-categorized by rule:";
 
 function matchesRule(rule: RuleRow, tx: TransactionRow) {
   if (!rule.enabled) {
@@ -129,6 +130,7 @@ export async function applyRulesToTransaction(params: {
 
   let categoryId = tx.category_id;
   let notes = tx.notes;
+  let appliedRuleName: string | null = null;
   const tagIds = new Set(
     (tx.tags ?? []).map((row: { tag_id: string }) => row.tag_id)
   );
@@ -143,6 +145,9 @@ export async function applyRulesToTransaction(params: {
       if (action.action_type === "set_category") {
         const next = payload.categoryId;
         if (typeof next === "string") {
+          if (next !== categoryId) {
+            appliedRuleName = rule.name;
+          }
           categoryId = next;
         }
       }
@@ -170,6 +175,9 @@ export async function applyRulesToTransaction(params: {
   const patch: Record<string, unknown> = {};
   if (categoryId !== tx.category_id) {
     patch.category_id = categoryId;
+  }
+  if (!notes && appliedRuleName) {
+    notes = `${ruleNotePrefix} ${appliedRuleName}`;
   }
   if (notes !== tx.notes) {
     patch.notes = notes ?? null;

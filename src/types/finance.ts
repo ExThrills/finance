@@ -88,6 +88,7 @@ export type TransactionWithRelations = TransactionRecord & {
   category: CategoryRecord | null;
   splits?: TransactionSplitRecord[];
   tags?: TagRecord[];
+  ruleApplied?: string | null;
 };
 
 export type SavedViewRecord = {

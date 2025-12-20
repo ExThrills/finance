@@ -21,6 +21,8 @@ type Filters = {
   categoryId: string;
   tagId: string;
   status: "all" | "pending" | "cleared";
+  recurringOnly: boolean;
+  largeOnly: boolean;
 };
 
 type Props = {

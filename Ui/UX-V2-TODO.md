@@ -27,10 +27,10 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Align chart sizing and legends across dashboard cards.
 
 ## Phase 4 — Transactions V2
-- [ ] Add sticky quick filters (Last 7 days, Pending, Uncategorized, Recurring, Large).
-- [ ] Add summary row above the table (total inflow/outflow/net).
-- [ ] Add rule attribution chip (“Auto‑categorized by Rule X”).
-- [ ] Move batch actions into a compact toolbar with clear affordances.
+- [x] Add sticky quick filters (Last 7 days, Pending, Uncategorized, Recurring, Large).
+- [x] Add summary row above the table (total inflow/outflow/net).
+- [x] Add rule attribution chip (“Auto‑categorized by Rule X”).
+- [x] Move batch actions into a compact toolbar with clear affordances.
 
 ## Phase 5 — Accounts V2
 - [ ] Add mini sparklines (30‑day balance trend).

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { fetchJson } from "@/lib/api-client";
-import { formatDateInput } from "@/lib/format";
+import { formatCurrency, formatDateInput } from "@/lib/format";
 import type {
   AccountRecord,
   CategoryRecord,
@@ -48,6 +48,8 @@ type Filters = {
   categoryId: string;
   tagId: string;
   status: "all" | "pending" | "cleared";
+  recurringOnly: boolean;
+  largeOnly: boolean;
 };
 
 const defaultFilters: Filters = {
@@ -59,6 +61,8 @@ const defaultFilters: Filters = {
   categoryId: "",
   tagId: "",
   status: "all",
+  recurringOnly: false,
+  largeOnly: false,
 };
 
 const normalizeFilters = (raw?: Record<string, unknown>): Filters => ({
@@ -71,9 +75,12 @@ const normalizeFilters = (raw?: Record<string, unknown>): Filters => ({
   tagId: typeof raw?.tagId === "string" ? raw.tagId : "",
   status:
     raw?.status === "pending" || raw?.status === "cleared" ? raw.status : "all",
+  recurringOnly: raw?.recurringOnly === true,
+  largeOnly: raw?.largeOnly === true,
 });
 
 export function TransactionsClient() {
+  const largeThreshold = 100_000;
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>([]);
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
@@ -174,6 +181,12 @@ export function TransactionsClient() {
       if (filters.status === "cleared" && tx.isPending) {
         return false;
       }
+      if (filters.recurringOnly && !tx.recurringGroupKey) {
+        return false;
+      }
+      if (filters.largeOnly && Math.abs(tx.amount) < largeThreshold) {
+        return false;
+      }
       if (start && new Date(tx.date) < start) {
         return false;
       }
@@ -182,12 +195,29 @@ export function TransactionsClient() {
       }
       return true;
     });
-  }, [transactions, filters, accountById, scope]);
+  }, [transactions, filters, accountById, scope, largeThreshold]);
 
   const inboxCount = useMemo(
     () => transactions.filter((tx) => !tx.categoryId).length,
     [transactions]
   );
+
+  const summary = useMemo(() => {
+    return filteredTransactions.reduce(
+      (acc, tx) => {
+        const isIncome = tx.category?.kind === "income";
+        if (isIncome) {
+          acc.income += tx.amount;
+        } else {
+          acc.expense += tx.amount;
+        }
+        acc.net += isIncome ? tx.amount : -tx.amount;
+        acc.count += 1;
+        return acc;
+      },
+      { income: 0, expense: 0, net: 0, count: 0 }
+    );
+  }, [filteredTransactions]);
 
   const activeView = savedViews.find((view) => view.id === activeViewId) ?? null;
 
@@ -511,7 +541,7 @@ export function TransactionsClient() {
         </div>
       </Toolbar>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <Toolbar className="sticky top-24 z-10 bg-background/80 backdrop-blur">
         <Button
           type="button"
           variant="outline"
@@ -521,6 +551,8 @@ export function TransactionsClient() {
               status: "pending",
               startDate: "",
               endDate: "",
+              recurringOnly: false,
+              largeOnly: false,
             })
           }
         >
@@ -535,6 +567,8 @@ export function TransactionsClient() {
               status: "cleared",
               startDate: "",
               endDate: "",
+              recurringOnly: false,
+              largeOnly: false,
             })
           }
         >
@@ -549,10 +583,38 @@ export function TransactionsClient() {
               categoryId: "uncategorized",
               startDate: "",
               endDate: "",
+              recurringOnly: false,
+              largeOnly: false,
             })
           }
         >
           Uncategorized
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            applyQuickFilter({
+              recurringOnly: true,
+              largeOnly: false,
+            })
+          }
+        >
+          Recurring
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            applyQuickFilter({
+              largeOnly: true,
+              recurringOnly: false,
+            })
+          }
+        >
+          Large
         </Button>
         <Button
           type="button"
@@ -580,12 +642,14 @@ export function TransactionsClient() {
               endDate: "",
               status: "all",
               categoryId: "",
+              recurringOnly: false,
+              largeOnly: false,
             })
           }
         >
           Reset quick filters
         </Button>
-      </div>
+      </Toolbar>
 
       <TransactionsFilters
         accounts={accounts}
@@ -599,6 +663,23 @@ export function TransactionsClient() {
           setFilters(next);
         }}
       />
+
+      <Toolbar className="px-4 py-3">
+        <div className="text-sm text-muted-foreground">
+          {summary.count} transactions
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="text-muted-foreground">
+            Inflow <span className="font-semibold text-emerald-700">{formatCurrency(summary.income)}</span>
+          </span>
+          <span className="text-muted-foreground">
+            Outflow <span className="font-semibold text-rose-700">{formatCurrency(summary.expense)}</span>
+          </span>
+          <span className="text-muted-foreground">
+            Net <span className="font-semibold">{formatCurrency(summary.net)}</span>
+          </span>
+        </div>
+      </Toolbar>
 
       {loading || transactions.length > 0 ? (
         <TransactionsTable
