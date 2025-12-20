@@ -213,6 +213,8 @@ export function TransactionsFilters({
                 categoryId: "",
                 tagId: "",
                 status: "all",
+                recurringOnly: false,
+                largeOnly: false,
               })
             }
           >
