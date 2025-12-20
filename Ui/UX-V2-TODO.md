@@ -59,9 +59,9 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Add preview panel showing what rules will match.
 
 ## Phase 10 — Alerts V2
-- [ ] Convert alerts list into timeline layout.
-- [ ] Add severity chips + color accents.
-- [ ] Add “Snooze” and “Acknowledge all”.
+- [x] Convert alerts list into timeline layout.
+- [x] Add severity chips + color accents.
+- [x] Add “Snooze” and “Acknowledge all”.
 
 ## Phase 11 — Data Visualization Polish
 - [ ] Standardize chart colors across pages.

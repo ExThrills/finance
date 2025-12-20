@@ -8,13 +8,14 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function PATCH(_: NextRequest, { params }: Params) {
+export async function PATCH(request: NextRequest, { params }: Params) {
   const { id } = await params;
   try {
     const userId = await getCurrentUserId();
+    const body = await request.json().catch(() => null);
     const { data: existing, error: findError } = await supabaseAdmin
       .from("alerts")
-      .select("id")
+      .select("id, payload")
       .eq("id", id)
       .eq("user_id", userId)
       .single();
@@ -22,9 +23,22 @@ export async function PATCH(_: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Alert not found." }, { status: 404 });
     }
 
+    const nextPayload =
+      body && body.action === "snooze" && body.snoozedUntil
+        ? { ...(existing as any).payload, snoozedUntil: body.snoozedUntil }
+        : undefined;
+
+    const updatePayload: Record<string, unknown> = {};
+    if (!body || body.action !== "snooze") {
+      updatePayload.acknowledged_at = new Date().toISOString();
+    }
+    if (nextPayload) {
+      updatePayload.payload = nextPayload;
+    }
+
     const { data, error } = await supabaseAdmin
       .from("alerts")
-      .update({ acknowledged_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", id)
       .select("*, rule:alert_rules(*)")
       .single();

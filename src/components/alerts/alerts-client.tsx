@@ -3,13 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Bell } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Toolbar } from "@/components/ui/toolbar";
 import { fetchJson } from "@/lib/api-client";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatShortDate } from "@/lib/format";
 import type { AccountRecord, AlertRecord, AlertRuleRecord, CategoryRecord } from "@/types/finance";
 
 const ruleTypes = [
@@ -28,6 +34,7 @@ export function AlertsClient() {
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState("");
   const [ruleType, setRuleType] = useState<(typeof ruleTypes)[number]>("low_cash");
@@ -46,6 +53,7 @@ export function AlertsClient() {
   );
 
   const load = async () => {
+    setLoading(true);
     try {
       const [rulesData, alertsData, accountsData, categoriesData] =
         await Promise.all([
@@ -62,6 +70,8 @@ export function AlertsClient() {
       const message =
         error instanceof Error ? error.message : "Failed to load alerts.";
       toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -189,19 +199,93 @@ export function AlertsClient() {
     }
   };
 
+  const isSnoozed = (alert: AlertRecord) => {
+    const until = alert.payload?.snoozedUntil;
+    if (!until || typeof until !== "string") {
+      return false;
+    }
+    return new Date(until).getTime() > Date.now();
+  };
+
+  const acknowledgeAll = async () => {
+    const pending = alerts.filter(
+      (alert) => !alert.acknowledgedAt && !isSnoozed(alert)
+    );
+    if (!pending.length) {
+      return;
+    }
+    try {
+      await Promise.all(
+        pending.map((alert) =>
+          fetchJson(`/api/alerts/${alert.id}`, { method: "PATCH" })
+        )
+      );
+      await load();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to acknowledge all.";
+      toast.error(message);
+    }
+  };
+
+  const snoozeAlert = async (alertId: string) => {
+    try {
+      await fetchJson(`/api/alerts/${alertId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          action: "snooze",
+          snoozedUntil: new Date(Date.now() + 86400000).toISOString(),
+        }),
+      });
+      toast.success("Alert snoozed for 24 hours.");
+      await load();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to snooze alert.";
+      toast.error(message);
+    }
+  };
+
+  const severityClasses = (severity: AlertRuleRecord["severity"]) => {
+    if (severity === "high") {
+      return "bg-rose-100 text-rose-700";
+    }
+    if (severity === "medium") {
+      return "bg-amber-100 text-amber-700";
+    }
+    return "bg-emerald-100 text-emerald-700";
+  };
+
+  const alertsTimeline = useMemo(() => alerts.slice(0, 10), [alerts]);
+  const activeCount = useMemo(
+    () =>
+      alerts.filter((alert) => !alert.acknowledgedAt && !isSnoozed(alert)).length,
+    [alerts]
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Alerts</h1>
-          <p className="text-sm text-muted-foreground">
-            Set thresholds and run checks for cash, utilization, and anomalies.
-          </p>
+      <PageHeader
+        title="Alerts"
+        description="Set thresholds and run checks for cash, utilization, and anomalies."
+        actions={
+          <Button variant="outline" onClick={runChecks}>
+            Run checks
+          </Button>
+        }
+      />
+
+      <Toolbar className="px-4 py-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Bell className="h-4 w-4" />
+          <span>{activeCount} active alerts</span>
         </div>
-        <Button variant="outline" onClick={runChecks}>
-          Run checks
-        </Button>
-      </div>
+        <div className="flex items-center gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={acknowledgeAll}>
+            Acknowledge all
+          </Button>
+        </div>
+      </Toolbar>
 
       <Card>
         <CardHeader>
@@ -353,7 +437,10 @@ export function AlertsClient() {
         </CardHeader>
         <CardContent className="space-y-3">
           {rules.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No alert rules yet.</p>
+            <EmptyState
+              title="No alert rules yet"
+              description="Create a rule to get notified about thresholds."
+            />
           ) : (
             rules.map((rule) => (
               <div
@@ -366,6 +453,9 @@ export function AlertsClient() {
                     {rule.ruleType} · {rule.severity} · {rule.channel}
                   </p>
                 </div>
+                <Badge className={severityClasses(rule.severity)}>
+                  {rule.severity}
+                </Badge>
                 <div className="flex items-center gap-2 text-sm">
                   {rule.thresholdAmount ? (
                     <span>{formatCurrency(rule.thresholdAmount)}</span>
@@ -389,35 +479,59 @@ export function AlertsClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent alerts</CardTitle>
+          <CardTitle>Alerts timeline</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {alerts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No alerts yet.</p>
+          {loading ? (
+            <EmptyState
+              title="Loading alerts"
+              description="Pulling the latest alert activity."
+            />
+          ) : alertsTimeline.length === 0 ? (
+            <EmptyState title="No alerts yet" description="You're all caught up." />
           ) : (
-            alerts.map((alert) => (
-              <div
-                key={alert.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 px-4 py-3"
-              >
-                <div>
-                  <p className="font-medium">{alert.message}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {alert.rule?.severity ?? "medium"} ·{" "}
-                    {new Date(alert.createdAt).toLocaleString()}
-                  </p>
+            alertsTimeline.map((alert) => {
+              const severity = alert.rule?.severity ?? "medium";
+              const snoozed = isSnoozed(alert);
+              return (
+                <div
+                  key={alert.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 px-4 py-3"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge className={severityClasses(severity)}>{severity}</Badge>
+                      <p className="font-medium">{alert.message}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {formatShortDate(alert.createdAt)} ·{" "}
+                      {alert.rule?.ruleType ?? "general"}
+                      {snoozed && alert.payload?.snoozedUntil
+                        ? ` · Snoozed until ${formatShortDate(
+                            alert.payload.snoozedUntil as string
+                          )}`
+                        : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {alert.acknowledgedAt ? (
+                      <span className="text-xs text-muted-foreground">Acknowledged</span>
+                    ) : snoozed ? (
+                      <Badge variant="secondary">Snoozed</Badge>
+                    ) : (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => snoozeAlert(alert.id)}>
+                          Snooze
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => acknowledge(alert.id)}>
+                          Acknowledge
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {alert.acknowledgedAt ? (
-                    <span className="text-xs text-muted-foreground">Acknowledged</span>
-                  ) : (
-                    <Button variant="outline" onClick={() => acknowledge(alert.id)}>
-                      Acknowledge
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </CardContent>
       </Card>
