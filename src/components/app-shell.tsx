@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { SidebarNav } from "@/components/sidebar-nav";
 import { AccountScopeProvider } from "@/components/account-scope-context";
-import { AccountScopeSwitcher } from "@/components/account-scope-switcher";
+import { TopBar } from "@/components/top-bar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -15,15 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarNav />
           </aside>
           <main className="flex-1 rounded-2xl border bg-card/80 p-6 shadow-card-soft backdrop-blur-sm">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  Ledgerly
-                </p>
-                <p className="text-lg font-semibold">Portfolio view</p>
-              </div>
-              <AccountScopeSwitcher />
-            </div>
+            <TopBar />
             <div className="mt-6">{children}</div>
           </main>
         </div>

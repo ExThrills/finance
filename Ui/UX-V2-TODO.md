@@ -15,10 +15,10 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Add a dismissible “What to do next” panel on Dashboard.
 
 ## Phase 2 — Navigation & Global Actions
-- [ ] Add persistent top bar with scope switcher + primary action.
-- [ ] Group sidebar nav into Core / Plan / Control / Settings.
-- [ ] Add notifications icon with unread count (alerts).
-- [ ] Add quick “Add transaction” button in top bar.
+- [x] Add persistent top bar with scope switcher + primary action.
+- [x] Group sidebar nav into Core / Plan / Control / Settings.
+- [x] Add notifications icon with unread count (alerts).
+- [x] Add quick “Add transaction” button in top bar.
 
 ## Phase 3 — Dashboard V2 Layout
 - [ ] Add Financial Health strip (cash, net, utilization, upcoming bills).
