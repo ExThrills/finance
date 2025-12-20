@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { fetchJson } from "@/lib/api-client";
 import { accountTypes } from "@/lib/validators";
 import { formatCurrency } from "@/lib/format";
-import type { AccountRecord } from "@/types/finance";
+import type { AccountRecord, TransactionWithRelations } from "@/types/finance";
 
 const dayToLabel = (day: number | null) => {
   if (!day) {
@@ -53,6 +53,7 @@ const formatRelative = (date: string | null) => {
 
 export function AccountsClient() {
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
+  const [transactions, setTransactions] = useState<TransactionWithRelations[]>([]);
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("checking");
   const [institution, setInstitution] = useState("");
@@ -67,8 +68,12 @@ export function AccountsClient() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchJson<AccountRecord[]>("/api/accounts");
-        setAccounts(data);
+        const [accountsData, transactionsData] = await Promise.all([
+          fetchJson<AccountRecord[]>("/api/accounts"),
+          fetchJson<TransactionWithRelations[]>("/api/transactions"),
+        ]);
+        setAccounts(accountsData);
+        setTransactions(transactionsData);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Failed to load accounts.";
@@ -176,6 +181,78 @@ export function AccountsClient() {
       }),
     [accounts]
   );
+
+  const transactionsByAccount = useMemo(() => {
+    const map = new Map<string, TransactionWithRelations[]>();
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(start.getDate() - 29);
+    start.setHours(0, 0, 0, 0);
+    transactions.forEach((tx) => {
+      const date = new Date(tx.date);
+      if (date < start) {
+        return;
+      }
+      const list = map.get(tx.accountId) ?? [];
+      list.push(tx);
+      map.set(tx.accountId, list);
+    });
+    return map;
+  }, [transactions]);
+
+  const renderSparkline = (
+    items: TransactionWithRelations[],
+    accountType: string
+  ) => {
+    if (!items.length) {
+      return (
+        <svg width="120" height="32" viewBox="0 0 120 32">
+          <line x1="0" y1="16" x2="120" y2="16" stroke="currentColor" strokeOpacity="0.2" />
+        </svg>
+      );
+    }
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(start.getDate() - 29);
+    start.setHours(0, 0, 0, 0);
+    const daily = Array.from({ length: 30 }).map(() => 0);
+    items.forEach((tx) => {
+      const date = new Date(tx.date);
+      const index = Math.floor((date.getTime() - start.getTime()) / 86400000);
+      if (index < 0 || index >= daily.length) {
+        return;
+      }
+      const isIncome = tx.category?.kind === "income";
+      const delta = isIncome ? tx.amount : -tx.amount;
+      daily[index] += accountType === "credit" ? -delta : delta;
+    });
+    const series = daily.reduce<number[]>((acc, value) => {
+      const last = acc.length ? acc[acc.length - 1] : 0;
+      acc.push(last + value);
+      return acc;
+    }, []);
+    const min = Math.min(...series);
+    const max = Math.max(...series);
+    const range = max - min || 1;
+    const points = series
+      .map((value, index) => {
+        const x = (index / (series.length - 1)) * 120;
+        const y = 28 - ((value - min) / range) * 24;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(" ");
+
+    return (
+      <svg width="120" height="32" viewBox="0 0 120 32">
+        <polyline
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          points={points}
+        />
+      </svg>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -296,13 +373,17 @@ export function AccountsClient() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Account dashboard</CardTitle>
-            <Button
-              variant="outline"
-              onClick={() => handleSync()}
-              disabled={syncing || accounts.length === 0}
-            >
-              Sync balances
-            </Button>
+            <div className="flex items-center gap-3">
+              {syncing ? (
+                <span className="text-xs text-muted-foreground">Syncing...</span>
+              ) : null}
+              <Button
+                onClick={() => handleSync()}
+                disabled={syncing || accounts.length === 0}
+              >
+                Sync all
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -334,16 +415,20 @@ export function AccountsClient() {
                     : account.syncStatus === "pending"
                     ? "MFA required"
                     : account.syncStatus === "error"
-                    ? "Error"
-                    : account.syncStatus === "disconnected"
-                    ? "Disconnected"
-                    : "Manual";
+                  ? "Error"
+                  : account.syncStatus === "disconnected"
+                  ? "Disconnected"
+                  : "Manual";
+                const sparkline = renderSparkline(
+                  transactionsByAccount.get(account.id) ?? [],
+                  account.type
+                );
                 return (
                   <div
                     key={account.id}
                     className="rounded-xl border bg-muted/10 p-4"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-lg font-semibold">{account.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -354,7 +439,8 @@ export function AccountsClient() {
                           {account.last4 ? `· ${account.last4}` : ""}
                         </p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        <div className="text-foreground">{sparkline}</div>
                         <Badge
                           variant="secondary"
                           className={
@@ -366,6 +452,7 @@ export function AccountsClient() {
                               ? "bg-amber-100 text-amber-700"
                               : "bg-muted text-foreground"
                           }
+                          title={account.syncError ? account.syncError : statusLabel}
                         >
                           {statusLabel}
                         </Badge>
@@ -408,12 +495,20 @@ export function AccountsClient() {
                           {dayToLabel(account.statementDueDay)}
                         </p>
                       </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Last updated</p>
+                        <p className="font-medium">
+                          {formatRelative(account.lastSyncAt)}
+                        </p>
+                      </div>
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                       <div className="text-xs text-muted-foreground">
-                        Last sync: {formatRelative(account.lastSyncAt)}
-                        {account.syncError ? ` · ${account.syncError}` : ""}
+                        Sync health:{" "}
+                        <span title={account.syncError ?? ""}>
+                          {account.syncError ? account.syncError : "All clear"}
+                        </span>
                       </div>
                       {account.rewardCurrency ? (
                         <Badge variant="outline">

@@ -33,10 +33,10 @@ This plan turns `Ui/UX-V2-.md` into an executable roadmap. Each phase is scoped 
 - [x] Move batch actions into a compact toolbar with clear affordances.
 
 ## Phase 5 — Accounts V2
-- [ ] Add mini sparklines (30‑day balance trend).
-- [ ] Add “Sync all” hero button with status feedback.
-- [ ] Show next statement close/due in a consistent slot.
-- [ ] Add “Last updated” and sync health tooltip.
+- [x] Add mini sparklines (30‑day balance trend).
+- [x] Add “Sync all” hero button with status feedback.
+- [x] Show next statement close/due in a consistent slot.
+- [x] Add “Last updated” and sync health tooltip.
 
 ## Phase 6 — Budgets V2
 - [ ] Add “Budget health” overview (On track / At risk / Over).
