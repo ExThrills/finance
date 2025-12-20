@@ -112,3 +112,44 @@ Inline validation behavior:
 - Lower onboarding drop-off rates.
 - Support tickets decrease around "where do I start?"
 - Advanced users can still access full account detail and rules without friction.
+
+## TODO List (Implementation Breakdown)
+
+### Accounts & Balances
+- [ ] Finalize the row layout (name, type, starting balance/credit limit).
+- [ ] Add inline validation per row (name required, balance required, limit required).
+- [ ] Disable "Finish setup" until all rows validate.
+- [ ] Add ability to remove a row and reindex labels.
+- [ ] Ensure multiple accounts can be added without layout overflow.
+
+### Advanced Details (Per Account)
+- [ ] Add per-row "Show advanced" toggle.
+- [ ] Wire advanced fields (APR, statement close/due, rewards).
+- [ ] Add helper text explaining when advanced fields matter.
+- [ ] Persist advanced values to account create/update APIs.
+
+### Quick Review Summary
+- [ ] Calculate totals (cash on hand, credit limits, utilization).
+- [ ] Display summary cards with clear labels.
+- [ ] Handle edge cases (no credit accounts, zero limits).
+
+### Primary Actions
+- [ ] Add "Finish setup" button and success flow.
+- [ ] Add secondary actions ("Review accounts", "Skip for now").
+- [ ] Confirm navigation to Transactions after completion.
+
+### Validation & UX
+- [ ] Error messages per row (friendly copy).
+- [ ] Highlight missing fields with focus and helper text.
+- [ ] Keyboard navigation across rows and fields.
+- [ ] Ensure focus states are visible on all inputs and buttons.
+
+### Integration Points
+- [ ] Link Setup Hub from dashboard checklist and sidebar.
+- [ ] Deprecate older onboarding entry points if needed.
+- [ ] Update docs to reflect Setup Hub as primary entry.
+
+### QA & Analytics
+- [ ] Manual QA: 1 account, multiple accounts, credit-only, mixed types.
+- [ ] Verify stored balances/limits in Accounts page.
+- [ ] Track time-to-complete setup for new users.
