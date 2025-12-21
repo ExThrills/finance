@@ -4,6 +4,7 @@ export const accountTypes = [
   "checking",
   "savings",
   "credit",
+  "loan",
   "cash",
   "investment",
   "other",

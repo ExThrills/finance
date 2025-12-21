@@ -57,7 +57,7 @@ const newDraft = (): AccountDraft => ({
 });
 
 const isRequiredStartingBalance = (type: string) =>
-  ["checking", "savings", "cash", "investment", "other"].includes(type);
+  ["checking", "savings", "cash", "investment", "loan", "other"].includes(type);
 
 const getDraftErrors = (draft: AccountDraft): DraftErrors => {
   const errors: DraftErrors = {};
@@ -272,14 +272,14 @@ export function SetupHubClient() {
                   </Button>
                 ) : null}
               </div>
-              <div className="mt-3 grid gap-4 lg:grid-cols-3">
+              <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div className="space-y-1">
                   <Label>Account name</Label>
                   <Input
                     value={draft.name}
                     onChange={(event) => updateDraft(draft.id, { name: event.target.value })}
                     placeholder="Checking, Savings, Amex"
-                    className={errors.name && showErrors ? "border-rose-500" : ""}
+                    className={`min-w-0 ${errors.name && showErrors ? "border-rose-500" : ""}`}
                   />
                   {errors.name && showErrors ? (
                     <p className="text-xs text-rose-600">{errors.name}</p>
@@ -291,7 +291,7 @@ export function SetupHubClient() {
                     value={draft.type}
                     onValueChange={(value) => updateDraft(draft.id, { type: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="min-w-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -313,7 +313,9 @@ export function SetupHubClient() {
                         updateDraft(draft.id, { creditLimit: event.target.value })
                       }
                       placeholder="5000.00"
-                      className={errors.creditLimit && showErrors ? "border-rose-500" : ""}
+                      className={`min-w-0 ${
+                        errors.creditLimit && showErrors ? "border-rose-500" : ""
+                      }`}
                     />
                     {errors.creditLimit && showErrors ? (
                       <p className="text-xs text-rose-600">{errors.creditLimit}</p>
@@ -329,7 +331,9 @@ export function SetupHubClient() {
                         updateDraft(draft.id, { startingBalance: event.target.value })
                       }
                       placeholder="1200.00"
-                      className={errors.startingBalance && showErrors ? "border-rose-500" : ""}
+                      className={`min-w-0 ${
+                        errors.startingBalance && showErrors ? "border-rose-500" : ""
+                      }`}
                     />
                     {errors.startingBalance && showErrors ? (
                       <p className="text-xs text-rose-600">{errors.startingBalance}</p>
@@ -352,7 +356,7 @@ export function SetupHubClient() {
               </div>
 
               {draft.showAdvanced ? (
-                <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <div className="space-y-1">
                     <Label>Institution</Label>
                     <Input
@@ -361,6 +365,7 @@ export function SetupHubClient() {
                         updateDraft(draft.id, { institution: event.target.value })
                       }
                       placeholder="Chase, Ally"
+                      className="min-w-0"
                     />
                   </div>
                   <div className="space-y-1">
@@ -372,7 +377,7 @@ export function SetupHubClient() {
                       }
                       placeholder="1234"
                       maxLength={4}
-                      className={errors.last4 && showErrors ? "border-rose-500" : ""}
+                      className={`min-w-0 ${errors.last4 && showErrors ? "border-rose-500" : ""}`}
                     />
                     {errors.last4 && showErrors ? (
                       <p className="text-xs text-rose-600">{errors.last4}</p>
@@ -387,7 +392,7 @@ export function SetupHubClient() {
                         updateDraft(draft.id, { apr: event.target.value })
                       }
                       placeholder="19.99"
-                      className={errors.apr && showErrors ? "border-rose-500" : ""}
+                      className={`min-w-0 ${errors.apr && showErrors ? "border-rose-500" : ""}`}
                     />
                     {errors.apr && showErrors ? (
                       <p className="text-xs text-rose-600">{errors.apr}</p>
@@ -403,7 +408,7 @@ export function SetupHubClient() {
                       }
                       placeholder="25"
                       className={
-                        errors.statementCloseDay && showErrors ? "border-rose-500" : ""
+                        `min-w-0 ${errors.statementCloseDay && showErrors ? "border-rose-500" : ""}`
                       }
                     />
                     {errors.statementCloseDay && showErrors ? (
@@ -420,7 +425,7 @@ export function SetupHubClient() {
                       }
                       placeholder="15"
                       className={
-                        errors.statementDueDay && showErrors ? "border-rose-500" : ""
+                        `min-w-0 ${errors.statementDueDay && showErrors ? "border-rose-500" : ""}`
                       }
                     />
                     {errors.statementDueDay && showErrors ? (
@@ -435,6 +440,7 @@ export function SetupHubClient() {
                         updateDraft(draft.id, { rewardCurrency: event.target.value })
                       }
                       placeholder="Points, Miles"
+                      className="min-w-0"
                     />
                   </div>
                 </div>

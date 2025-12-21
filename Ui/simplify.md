@@ -144,11 +144,11 @@ Inline validation behavior:
 ## TODO List (Implementation Breakdown)
 
 ### Step 1: Accounts & Balances
-- [ ] Finalize the row layout (name, type, starting balance/credit limit).
+- [x] Finalize the row layout (name, type, starting balance/credit limit).
 - [x] Add inline validation per row (name required, balance required, limit required).
 - [x] Disable "Finish setup" until all rows validate.
-- [ ] Add ability to remove a row and reindex labels.
-- [ ] Ensure multiple accounts can be added without layout overflow.
+- [x] Add ability to remove a row and reindex labels.
+- [x] Ensure multiple accounts can be added without layout overflow.
 
 ### Step 1b: Advanced Details (Per Account)
 - [ ] Add per-row "Show advanced" toggle.
