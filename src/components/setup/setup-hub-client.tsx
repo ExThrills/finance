@@ -15,7 +15,7 @@ import { Toolbar } from "@/components/ui/toolbar";
 import { accountTypes, categoryKinds } from "@/lib/validators";
 import { parseAmountToCents, formatCurrency, formatDateInput } from "@/lib/format";
 import { fetchJson } from "@/lib/api-client";
-import type { CategoryRecord } from "@/types/finance";
+import type { AccountRecord, CategoryRecord } from "@/types/finance";
 
 type AccountDraft = {
   id: string;
@@ -727,7 +727,7 @@ export function SetupHubClient() {
 
       const createdAccounts = await Promise.all(
         accountPayloads.map(({ payload }) =>
-          fetchJson("/api/accounts", {
+          fetchJson<AccountRecord>("/api/accounts", {
             method: "POST",
             body: JSON.stringify(payload),
           })
