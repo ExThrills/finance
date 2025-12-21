@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toolbar } from "@/components/ui/toolbar";
 import { accountTypes, categoryKinds } from "@/lib/validators";
-import { parseAmountToCents, formatCurrency } from "@/lib/format";
+import { parseAmountToCents, formatCurrency, formatDateInput } from "@/lib/format";
 import { fetchJson } from "@/lib/api-client";
 import type { CategoryRecord } from "@/types/finance";
 
@@ -74,6 +74,24 @@ type RuleTemplate = {
   categoryName: string;
 };
 
+type RecurringDraft = {
+  id: string;
+  description: string;
+  amount: string;
+  cadence: "weekly" | "monthly";
+  nextDate: string;
+  accountRef: string;
+  categoryKey: string;
+};
+
+type RecurringErrors = {
+  description?: string;
+  amount?: string;
+  cadence?: string;
+  nextDate?: string;
+  accountRef?: string;
+};
+
 const defaultCategories: Array<{ name: string; kind: "expense" | "income" }> = [
   { name: "Salary", kind: "income" },
   { name: "Interest", kind: "income" },
@@ -113,6 +131,30 @@ const ruleTemplates: RuleTemplate[] = [
   },
 ];
 
+const recurringTemplates = [
+  {
+    id: "recurring-rent",
+    label: "Rent",
+    cadence: "monthly" as const,
+    description: "Rent",
+    amount: "-1500.00",
+  },
+  {
+    id: "recurring-payroll",
+    label: "Payroll",
+    cadence: "weekly" as const,
+    description: "Paycheck",
+    amount: "2000.00",
+  },
+  {
+    id: "recurring-subscription",
+    label: "Subscription",
+    cadence: "monthly" as const,
+    description: "Subscription",
+    amount: "-19.99",
+  },
+];
+
 const newDraft = (): AccountDraft => ({
   id: `draft-${Math.random().toString(36).slice(2)}`,
   name: "",
@@ -142,8 +184,21 @@ const newCategoryDraft = (): CategoryDraft => ({
   kind: "expense",
 });
 
+const newRecurringDraft = (): RecurringDraft => ({
+  id: `recurring-${Math.random().toString(36).slice(2)}`,
+  description: "",
+  amount: "",
+  cadence: "monthly",
+  nextDate: formatDateInput(new Date()),
+  accountRef: "",
+  categoryKey: "",
+});
+
 const isRequiredStartingBalance = (type: string) =>
   ["checking", "savings", "cash", "investment", "loan", "other"].includes(type);
+
+const buildCategoryKey = (name: string, kind: string) =>
+  `${name.trim().toLowerCase()}::${kind}`;
 
 const getDraftErrors = (draft: AccountDraft): DraftErrors => {
   const errors: DraftErrors = {};
@@ -226,6 +281,34 @@ const getCategoryErrors = (category: CategoryDraft): CategoryErrors => {
   return errors;
 };
 
+const getRecurringErrors = (recurring: RecurringDraft): RecurringErrors => {
+  const errors: RecurringErrors = {};
+  if (!recurring.description.trim()) {
+    errors.description = "Description is required.";
+  }
+
+  const amount = parseAmountToCents(recurring.amount);
+  if (amount === null) {
+    errors.amount = "Amount is required.";
+  }
+
+  if (!recurring.cadence) {
+    errors.cadence = "Cadence is required.";
+  }
+
+  if (!recurring.nextDate.trim()) {
+    errors.nextDate = "Next date is required.";
+  } else if (Number.isNaN(new Date(recurring.nextDate).getTime())) {
+    errors.nextDate = "Use a valid date.";
+  }
+
+  if (!recurring.accountRef) {
+    errors.accountRef = "Select an account.";
+  }
+
+  return errors;
+};
+
 const hasDraftInput = (draft: AccountDraft) =>
   [
     draft.name,
@@ -247,11 +330,21 @@ const hasDebtInput = (debt: DebtDraft) =>
 const hasCategoryInput = (category: CategoryDraft) =>
   [category.name].some((value) => value.trim() !== "");
 
+const hasRecurringInput = (recurring: RecurringDraft) =>
+  [
+    recurring.description,
+    recurring.amount,
+    recurring.nextDate,
+    recurring.accountRef,
+    recurring.categoryKey,
+  ].some((value) => value.trim() !== "");
+
 export function SetupHubClient() {
   const router = useRouter();
   const [drafts, setDrafts] = useState<AccountDraft[]>([newDraft()]);
   const [debtDrafts, setDebtDrafts] = useState<DebtDraft[]>([]);
   const [customCategories, setCustomCategories] = useState<CategoryDraft[]>([]);
+  const [recurringDrafts, setRecurringDrafts] = useState<RecurringDraft[]>([]);
   const [useDefaultCategories, setUseDefaultCategories] = useState(true);
   const [selectedRuleTemplates, setSelectedRuleTemplates] = useState<string[]>([]);
   const [existingCategories, setExistingCategories] = useState<CategoryRecord[]>([]);
@@ -297,6 +390,32 @@ export function SetupHubClient() {
 
   const removeCategoryDraft = (id: string) => {
     setCustomCategories((prev) => prev.filter((draft) => draft.id !== id));
+  };
+
+  const updateRecurringDraft = (id: string, patch: Partial<RecurringDraft>) => {
+    setRecurringDrafts((prev) =>
+      prev.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft))
+    );
+  };
+
+  const addRecurringDraft = (template?: (typeof recurringTemplates)[number]) => {
+    if (template) {
+      setRecurringDrafts((prev) => [
+        ...prev,
+        {
+          ...newRecurringDraft(),
+          description: template.description,
+          amount: template.amount,
+          cadence: template.cadence,
+        },
+      ]);
+      return;
+    }
+    setRecurringDrafts((prev) => [...prev, newRecurringDraft()]);
+  };
+
+  const removeRecurringDraft = (id: string) => {
+    setRecurringDrafts((prev) => prev.filter((draft) => draft.id !== id));
   };
 
   const toggleRuleTemplate = (id: string) => {
@@ -352,6 +471,13 @@ export function SetupHubClient() {
     }, {});
   }, [customCategories]);
 
+  const recurringErrors = useMemo(() => {
+    return recurringDrafts.reduce<Record<string, RecurringErrors>>((acc, recurring) => {
+      acc[recurring.id] = getRecurringErrors(recurring);
+      return acc;
+    }, {});
+  }, [recurringDrafts]);
+
   const hasAccountErrors = useMemo(
     () => Object.values(draftErrors).some((errors) => Object.keys(errors).length > 0),
     [draftErrors]
@@ -367,7 +493,47 @@ export function SetupHubClient() {
     [categoryErrors]
   );
 
-  const hasErrors = hasAccountErrors || hasDebtErrors || hasCategoryErrors;
+  const hasRecurringErrors = useMemo(
+    () => Object.values(recurringErrors).some((errors) => Object.keys(errors).length > 0),
+    [recurringErrors]
+  );
+
+  const hasErrors = hasAccountErrors || hasDebtErrors || hasCategoryErrors || hasRecurringErrors;
+
+  const categoryOptions = useMemo(() => {
+    const entries = [
+      ...existingCategories.map((category) => ({
+        name: category.name,
+        kind: category.kind,
+      })),
+      ...(useDefaultCategories ? defaultCategories : []),
+      ...customCategories
+        .filter((category) => category.name.trim())
+        .map((category) => ({
+          name: category.name.trim(),
+          kind: category.kind,
+        })),
+    ];
+
+    const seen = new Set<string>();
+    return entries.filter((entry) => {
+      const key = buildCategoryKey(entry.name, entry.kind);
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [existingCategories, useDefaultCategories, customCategories]);
+
+  const accountOptions = useMemo(
+    () =>
+      drafts.map((draft, index) => ({
+        id: draft.id,
+        label: draft.name.trim() || `Account ${index + 1}`,
+      })),
+    [drafts]
+  );
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -448,12 +614,9 @@ export function SetupHubClient() {
       };
     });
 
-    const categoryKey = (name: string, kind: string) =>
-      `${name.trim().toLowerCase()}::${kind}`;
-
     const existingCategoryMap = new Map(
       existingCategories.map((category) => [
-        categoryKey(category.name, category.kind),
+        buildCategoryKey(category.name, category.kind),
         category,
       ])
     );
@@ -468,14 +631,17 @@ export function SetupHubClient() {
 
     const categoryPayloads = [...defaultCategoryPayloads, ...customCategoryPayloads].filter(
       (category, index, all) =>
-        index === all.findIndex((item) => categoryKey(item.name, item.kind) === categoryKey(category.name, category.kind))
+        index ===
+        all.findIndex(
+          (item) => buildCategoryKey(item.name, item.kind) === buildCategoryKey(category.name, category.kind)
+        )
     );
 
     setSaving(true);
     try {
       const createdCategories = await Promise.all(
         categoryPayloads
-          .filter((category) => !existingCategoryMap.has(categoryKey(category.name, category.kind)))
+          .filter((category) => !existingCategoryMap.has(buildCategoryKey(category.name, category.kind)))
           .map((category) =>
             fetchJson<CategoryRecord>("/api/categories", {
               method: "POST",
@@ -486,7 +652,7 @@ export function SetupHubClient() {
 
       const categoryLookup = new Map(existingCategoryMap);
       createdCategories.forEach((category) => {
-        categoryLookup.set(categoryKey(category.name, category.kind), category);
+        categoryLookup.set(buildCategoryKey(category.name, category.kind), category);
       });
 
       const selectedTemplates = ruleTemplates.filter((template) =>
@@ -494,7 +660,7 @@ export function SetupHubClient() {
       );
 
       for (const template of selectedTemplates) {
-        const key = categoryKey(template.categoryName, "expense");
+        const key = buildCategoryKey(template.categoryName, "expense");
         let category = categoryLookup.get(key);
         if (!category) {
           category = await fetchJson<CategoryRecord>("/api/categories", {
@@ -521,14 +687,66 @@ export function SetupHubClient() {
         });
       }
 
-      await Promise.all(
-        [...payloads, ...debtPayloads].map((payload) =>
+      const accountPayloads = payloads.map((payload, index) => ({
+        payload,
+        draftId: drafts[index]?.id,
+      }));
+
+      const createdAccounts = await Promise.all(
+        accountPayloads.map(({ payload }) =>
           fetchJson("/api/accounts", {
             method: "POST",
             body: JSON.stringify(payload),
           })
         )
       );
+
+      const accountLookup = new Map(
+        accountPayloads.map((entry, index) => [entry.draftId, createdAccounts[index]])
+      );
+
+      if (debtPayloads.length) {
+        await Promise.all(
+          debtPayloads.map((payload) =>
+            fetchJson("/api/accounts", {
+              method: "POST",
+              body: JSON.stringify(payload),
+            })
+          )
+        );
+      }
+
+      if (recurringDrafts.length) {
+        await Promise.all(
+          recurringDrafts.map((recurring) => {
+            const account = accountLookup.get(recurring.accountRef);
+            if (!account) {
+              throw new Error("Recurring entries need a linked account.");
+            }
+            const amount = parseAmountToCents(recurring.amount);
+            if (amount === null) {
+              throw new Error("Recurring entries need an amount.");
+            }
+            const category =
+              recurring.categoryKey && categoryLookup.has(recurring.categoryKey)
+                ? categoryLookup.get(recurring.categoryKey)
+                : null;
+
+            return fetchJson("/api/recurring", {
+              method: "POST",
+              body: JSON.stringify({
+                accountId: account.id,
+                categoryId: category?.id ?? null,
+                description: recurring.description.trim(),
+                amount,
+                cadence: recurring.cadence,
+                nextDate: recurring.nextDate,
+              }),
+            });
+          })
+        );
+      }
+
       toast.success("Accounts created.");
       router.push("/transactions");
     } catch (error) {
@@ -1031,6 +1249,197 @@ export function SetupHubClient() {
               ))}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recurring & paydays</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Add your predictable income and bills so projections stay accurate.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {recurringTemplates.map((template) => (
+              <Button
+                key={template.id}
+                type="button"
+                variant="outline"
+                onClick={() => addRecurringDraft(template)}
+              >
+                Add {template.label}
+              </Button>
+            ))}
+            <Button type="button" variant="outline" onClick={() => addRecurringDraft()}>
+              Add recurring
+            </Button>
+          </div>
+
+          {recurringDrafts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No recurring entries yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {recurringDrafts.map((recurring, index) => {
+                const errors = recurringErrors[recurring.id] ?? {};
+                const showErrors =
+                  hasRecurringInput(recurring) ||
+                  !recurring.description.trim() ||
+                  !recurring.amount.trim() ||
+                  !recurring.accountRef;
+
+                return (
+                  <div
+                    key={recurring.id}
+                    className="rounded-lg border bg-muted/20 p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">Recurring {index + 1}</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRecurringDraft(recurring.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-1">
+                        <Label>Description</Label>
+                        <Input
+                          value={recurring.description}
+                          onChange={(event) =>
+                            updateRecurringDraft(recurring.id, {
+                              description: event.target.value,
+                            })
+                          }
+                          placeholder="Rent, Payroll, Subscription"
+                          className={`min-w-0 ${
+                            errors.description && showErrors ? "border-rose-500" : ""
+                          }`}
+                        />
+                        {errors.description && showErrors ? (
+                          <p className="text-xs text-rose-600">{errors.description}</p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Amount</Label>
+                        <Input
+                          inputMode="decimal"
+                          value={recurring.amount}
+                          onChange={(event) =>
+                            updateRecurringDraft(recurring.id, {
+                              amount: event.target.value,
+                            })
+                          }
+                          placeholder="-1200.00"
+                          className={`min-w-0 ${
+                            errors.amount && showErrors ? "border-rose-500" : ""
+                          }`}
+                        />
+                        {errors.amount && showErrors ? (
+                          <p className="text-xs text-rose-600">{errors.amount}</p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Cadence</Label>
+                        <Select
+                          value={recurring.cadence}
+                          onValueChange={(value) =>
+                            updateRecurringDraft(recurring.id, {
+                              cadence: value as RecurringDraft["cadence"],
+                            })
+                          }
+                        >
+                          <SelectTrigger className="min-w-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="weekly">weekly</SelectItem>
+                            <SelectItem value="monthly">monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.cadence && showErrors ? (
+                          <p className="text-xs text-rose-600">{errors.cadence}</p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Account</Label>
+                        <Select
+                          value={recurring.accountRef}
+                          onValueChange={(value) =>
+                            updateRecurringDraft(recurring.id, { accountRef: value })
+                          }
+                        >
+                          <SelectTrigger className="min-w-0">
+                            <SelectValue placeholder="Select account" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accountOptions.map((account) => (
+                              <SelectItem key={account.id} value={account.id}>
+                                {account.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.accountRef && showErrors ? (
+                          <p className="text-xs text-rose-600">{errors.accountRef}</p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Category</Label>
+                        <Select
+                          value={recurring.categoryKey || "none"}
+                          onValueChange={(value) =>
+                            updateRecurringDraft(recurring.id, {
+                              categoryKey: value === "none" ? "" : value,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="min-w-0">
+                            <SelectValue placeholder="Optional" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {categoryOptions.map((category) => (
+                              <SelectItem
+                                key={`${category.kind}-${category.name}`}
+                                value={buildCategoryKey(category.name, category.kind)}
+                              >
+                                {category.name} · {category.kind}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Next date</Label>
+                        <Input
+                          type="date"
+                          value={recurring.nextDate}
+                          onChange={(event) =>
+                            updateRecurringDraft(recurring.id, {
+                              nextDate: event.target.value,
+                            })
+                          }
+                          className={`min-w-0 ${
+                            errors.nextDate && showErrors ? "border-rose-500" : ""
+                          }`}
+                        />
+                        {errors.nextDate && showErrors ? (
+                          <p className="text-xs text-rose-600">{errors.nextDate}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 

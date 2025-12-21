@@ -167,9 +167,9 @@ Inline validation behavior:
 - [x] Add a "rules template" picker (optional).
 
 ### Step 4: Recurring & Paydays
-- [ ] Add recurring income and bill rows.
-- [ ] Provide quick templates (rent, payroll, subscriptions).
-- [ ] Store frequency and next date.
+- [x] Add recurring income and bill rows.
+- [x] Provide quick templates (rent, payroll, subscriptions).
+- [x] Store frequency and next date.
 
 ### Step 5: Quick Review Summary
 - [ ] Calculate totals (cash on hand, credit limits, utilization, debt, recurring net).
