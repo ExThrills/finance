@@ -177,9 +177,9 @@ Inline validation behavior:
 - [x] Handle edge cases (no credit accounts, zero limits).
 
 ### Step 6: Primary Actions
-- [ ] Add "Finish setup" button and success flow.
-- [ ] Add secondary actions ("Review accounts", "Skip for now").
-- [ ] Confirm navigation to Transactions after completion.
+- [x] Add "Finish setup" button and success flow.
+- [x] Add secondary actions ("Review accounts", "Skip for now").
+- [x] Confirm navigation to Transactions after completion.
 
 ### Validation & UX
 - [x] Error messages per row (friendly copy).
