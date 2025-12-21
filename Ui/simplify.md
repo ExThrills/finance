@@ -151,10 +151,10 @@ Inline validation behavior:
 - [x] Ensure multiple accounts can be added without layout overflow.
 
 ### Step 1b: Advanced Details (Per Account)
-- [ ] Add per-row "Show advanced" toggle.
-- [ ] Wire advanced fields (APR, statement close/due, rewards).
-- [ ] Add helper text explaining when advanced fields matter.
-- [ ] Persist advanced values to account create/update APIs.
+- [x] Add per-row "Show advanced" toggle.
+- [x] Wire advanced fields (APR, statement close/due, rewards).
+- [x] Add helper text explaining when advanced fields matter.
+- [x] Persist advanced values to account create/update APIs.
 
 ### Step 2: Debts & Obligations
 - [ ] Add debt rows (lender, current balance, APR, due day).

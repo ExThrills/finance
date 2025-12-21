@@ -357,6 +357,9 @@ export function SetupHubClient() {
 
               {draft.showAdvanced ? (
                 <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <p className="md:col-span-2 xl:col-span-3 text-xs text-muted-foreground">
+                    Optional details help with utilization, statements, and rewards tracking.
+                  </p>
                   <div className="space-y-1">
                     <Label>Institution</Label>
                     <Input
