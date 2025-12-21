@@ -1,53 +1,67 @@
 # Simplified Onboarding Hub
 
-This document defines a simplified, centralized setup flow so new users can get started quickly without losing access to advanced tools. The core idea is a single "Setup Hub" screen that handles all account creation and starting balances with progressive disclosure for power features.
+This document defines a simplified, centralized setup flow so new users can get started quickly without losing access to advanced tools. The core idea is a fast multi-step "Setup Hub" that captures all financial sources (bank accounts, debts, credit cards, investments) plus the minimum structure needed to track correctly.
 
 ## Goals
-- Provide one clear place to add accounts and starting balances.
-- Minimize decision fatigue for first-time users.
+- Provide one clear place to add every financial account (cash, bank, credit, loans, investments).
+- Minimize decision fatigue for first-time users while still capturing critical data.
 - Preserve advanced capabilities for power users without blocking the basics.
-- Keep setup under 2 minutes for typical users.
+- Keep setup under 2 minutes for typical users (with smart defaults and optional steps).
 
 ## Guiding Principles
-- Progressive disclosure: show the minimum to complete setup, expand only when needed.
+- Progressive disclosure: show the minimum to complete each step, expand only when needed.
 - One primary action per screen.
 - Defaults that make sense for typical users.
 - Safe fallbacks: allow skipping non-critical fields.
 
-## Setup Hub: Information Architecture
-The Setup Hub is a single page, broken into four sections:
+## Setup Hub: Multi-Step Flow
+The Setup Hub is a fast, multi-step flow. Each step is skippable unless marked required.
 
-1) Accounts & Balances (required)
-- Multi-row table-like layout so users can add multiple accounts in one place.
+### Step 1: Accounts & Balances (required)
+- Multi-row table-like layout so users can add multiple accounts quickly.
 - Each row captures:
   - Account name (required)
-  - Account type (required; checking, savings, credit, cash, investment, other)
+  - Account type (required; checking, savings, credit, loan, cash, investment, other)
   - Starting balance (required for non-credit)
   - Credit limit (required for credit)
   - Optional: institution, last 4
 - Actions:
   - Add another account
   - Remove a row
+  - "Skip for now" only if at least one account exists
 
-2) Advanced details (collapsed by default)
-- Expand per account row only if needed.
+### Step 2: Debts & Obligations (optional, recommended)
+- Add debts that are not credit cards (student loans, auto, mortgage).
 - Fields:
-  - APR
-  - Statement close day
-  - Statement due day
-  - Rewards currency
-  - Sync status (read-only for now)
+  - Lender name
+  - Original balance (optional)
+  - Current balance (required)
+  - APR (optional)
+  - Due day (optional)
+- If users already added a "loan" account in Step 1, surface it here for confirmation.
 
-3) Quick review
+### Step 3: Categories & Rules (optional, recommended)
+- Offer a default category set with common expenses + income.
+- Allow quick add custom categories.
+- Optional: add one or two rules (example templates).
+
+### Step 4: Recurring & Paydays (optional)
+- Add recurring income (paychecks) and bills (rent, subscriptions).
+- Quick templates for common recurring items.
+- Toggle to skip and add later.
+
+### Step 5: Quick Review (required)
 - Summary totals:
   - Total cash on hand
   - Total credit limits
   - Overall utilization (if credit accounts exist)
-- Designed to catch errors before save.
+  - Total debt balance
+  - Recurring net (monthly)
+- Inline validation highlights missing required fields.
 
-4) Primary action
-- "Finish setup" (saves accounts and moves to Transactions)
-- Secondary: "Review accounts" or "Skip for now"
+### Step 6: Finish Setup
+- Primary action: "Finish setup" (saves everything and moves to Transactions)
+- Secondary: "Review accounts"
 
 ## Field Requirements and Validation
 Per account row:
@@ -66,6 +80,16 @@ Per account row:
 - APR:
   - Optional, non-negative.
 
+Debt rows:
+- Lender name: required.
+- Current balance: required.
+- APR, due day: optional (validate ranges when present).
+
+Recurring rows:
+- Name: required.
+- Amount: required.
+- Frequency: required.
+
 Inline validation behavior:
 - Show validation per row instead of global errors.
 - Use friendly copy: "Credit cards need a limit" not "Missing field."
@@ -78,13 +102,16 @@ Inline validation behavior:
 - Keep advanced fields editable later in Accounts to avoid blocking setup.
 
 ## UX Flow Details
-- Stepper/checklist at top:
-  - Add accounts
-  - Review summary
-  - Finish setup
-- Each row has clear visual grouping and an "add another" button.
+- Stepper at top:
+  - Accounts
+  - Debts
+  - Categories
+  - Recurring
+  - Review
+  - Finish
+- Each step has clear visual grouping and an "add another" button.
 - Use placeholders that show the expected format (e.g., 5000.00).
-- Use a single primary CTA at the bottom.
+- Use a single primary CTA per step, with a "Skip for now" secondary action where allowed.
 
 ## Advanced Tools Still Available
 - Full Accounts page remains accessible for edits and detailed fields.
@@ -103,9 +130,10 @@ Inline validation behavior:
   - Allow "Skip for now" and return to Dashboard.
 
 ## Rollout Plan
-- Phase A: Accounts & balances only (single screen).
-- Phase B: Advanced toggles and summary totals.
-- Phase C: Integrate with first-run checklist and replace old entry points.
+- Phase A: Accounts & balances (single step).
+- Phase B: Debts + categories.
+- Phase C: Recurring + review totals.
+- Phase D: Integrate with first-run checklist and replace old entry points.
 
 ## Success Criteria
 - New users complete setup in under 2 minutes.
@@ -115,25 +143,40 @@ Inline validation behavior:
 
 ## TODO List (Implementation Breakdown)
 
-### Accounts & Balances
+### Step 1: Accounts & Balances
 - [ ] Finalize the row layout (name, type, starting balance/credit limit).
 - [ ] Add inline validation per row (name required, balance required, limit required).
 - [ ] Disable "Finish setup" until all rows validate.
 - [ ] Add ability to remove a row and reindex labels.
 - [ ] Ensure multiple accounts can be added without layout overflow.
 
-### Advanced Details (Per Account)
+### Step 1b: Advanced Details (Per Account)
 - [ ] Add per-row "Show advanced" toggle.
 - [ ] Wire advanced fields (APR, statement close/due, rewards).
 - [ ] Add helper text explaining when advanced fields matter.
 - [ ] Persist advanced values to account create/update APIs.
 
-### Quick Review Summary
-- [ ] Calculate totals (cash on hand, credit limits, utilization).
+### Step 2: Debts & Obligations
+- [ ] Add debt rows (lender, current balance, APR, due day).
+- [ ] Validate balances and day ranges.
+- [ ] Link loan-type accounts from Step 1 for confirmation.
+
+### Step 3: Categories & Rules
+- [ ] Offer a default category set (toggle to accept).
+- [ ] Allow quick add custom categories.
+- [ ] Add a "rules template" picker (optional).
+
+### Step 4: Recurring & Paydays
+- [ ] Add recurring income and bill rows.
+- [ ] Provide quick templates (rent, payroll, subscriptions).
+- [ ] Store frequency and next date.
+
+### Step 5: Quick Review Summary
+- [ ] Calculate totals (cash on hand, credit limits, utilization, debt, recurring net).
 - [ ] Display summary cards with clear labels.
 - [ ] Handle edge cases (no credit accounts, zero limits).
 
-### Primary Actions
+### Step 6: Primary Actions
 - [ ] Add "Finish setup" button and success flow.
 - [ ] Add secondary actions ("Review accounts", "Skip for now").
 - [ ] Confirm navigation to Transactions after completion.
