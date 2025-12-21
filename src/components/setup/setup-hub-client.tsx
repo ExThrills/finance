@@ -41,6 +41,21 @@ type DraftErrors = {
   apr?: string;
 };
 
+type DebtDraft = {
+  id: string;
+  name: string;
+  currentBalance: string;
+  apr: string;
+  dueDay: string;
+};
+
+type DebtErrors = {
+  name?: string;
+  currentBalance?: string;
+  apr?: string;
+  dueDay?: string;
+};
+
 const newDraft = (): AccountDraft => ({
   id: `draft-${Math.random().toString(36).slice(2)}`,
   name: "",
@@ -54,6 +69,14 @@ const newDraft = (): AccountDraft => ({
   rewardCurrency: "",
   apr: "",
   showAdvanced: false,
+});
+
+const newDebtDraft = (): DebtDraft => ({
+  id: `debt-${Math.random().toString(36).slice(2)}`,
+  name: "",
+  currentBalance: "",
+  apr: "",
+  dueDay: "",
 });
 
 const isRequiredStartingBalance = (type: string) =>
@@ -104,6 +127,34 @@ const getDraftErrors = (draft: AccountDraft): DraftErrors => {
   return errors;
 };
 
+const getDebtErrors = (debt: DebtDraft): DebtErrors => {
+  const errors: DebtErrors = {};
+  if (!debt.name.trim()) {
+    errors.name = "Lender name is required.";
+  }
+
+  const balance = parseAmountToCents(debt.currentBalance);
+  if (balance === null) {
+    errors.currentBalance = "Current balance is required.";
+  }
+
+  if (debt.apr.trim()) {
+    const apr = Number.parseFloat(debt.apr);
+    if (Number.isNaN(apr) || apr < 0) {
+      errors.apr = "APR must be zero or higher.";
+    }
+  }
+
+  if (debt.dueDay.trim()) {
+    const day = Number.parseInt(debt.dueDay, 10);
+    if (Number.isNaN(day) || day < 1 || day > 31) {
+      errors.dueDay = "Use a day between 1 and 31.";
+    }
+  }
+
+  return errors;
+};
+
 const hasDraftInput = (draft: AccountDraft) =>
   [
     draft.name,
@@ -117,9 +168,15 @@ const hasDraftInput = (draft: AccountDraft) =>
     draft.apr,
   ].some((value) => value.trim() !== "");
 
+const hasDebtInput = (debt: DebtDraft) =>
+  [debt.name, debt.currentBalance, debt.apr, debt.dueDay].some(
+    (value) => value.trim() !== ""
+  );
+
 export function SetupHubClient() {
   const router = useRouter();
   const [drafts, setDrafts] = useState<AccountDraft[]>([newDraft()]);
+  const [debtDrafts, setDebtDrafts] = useState<DebtDraft[]>([]);
   const [saving, setSaving] = useState(false);
 
   const updateDraft = (id: string, patch: Partial<AccountDraft>) => {
@@ -135,6 +192,25 @@ export function SetupHubClient() {
   const removeDraft = (id: string) => {
     setDrafts((prev) => prev.filter((draft) => draft.id !== id));
   };
+
+  const updateDebtDraft = (id: string, patch: Partial<DebtDraft>) => {
+    setDebtDrafts((prev) =>
+      prev.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft))
+    );
+  };
+
+  const addDebtDraft = () => {
+    setDebtDrafts((prev) => [...prev, newDebtDraft()]);
+  };
+
+  const removeDebtDraft = (id: string) => {
+    setDebtDrafts((prev) => prev.filter((draft) => draft.id !== id));
+  };
+
+  const linkedLoanDrafts = useMemo(
+    () => drafts.filter((draft) => draft.type === "loan"),
+    [drafts]
+  );
 
   const summary = useMemo(() => {
     let cashTotal = 0;
@@ -164,10 +240,24 @@ export function SetupHubClient() {
     }, {});
   }, [drafts]);
 
-  const hasErrors = useMemo(
+  const debtErrors = useMemo(() => {
+    return debtDrafts.reduce<Record<string, DebtErrors>>((acc, debt) => {
+      acc[debt.id] = getDebtErrors(debt);
+      return acc;
+    }, {});
+  }, [debtDrafts]);
+
+  const hasAccountErrors = useMemo(
     () => Object.values(draftErrors).some((errors) => Object.keys(errors).length > 0),
     [draftErrors]
   );
+
+  const hasDebtErrors = useMemo(
+    () => Object.values(debtErrors).some((errors) => Object.keys(errors).length > 0),
+    [debtErrors]
+  );
+
+  const hasErrors = hasAccountErrors || hasDebtErrors;
 
   const handleSubmit = async () => {
     if (hasErrors) {
@@ -214,10 +304,30 @@ export function SetupHubClient() {
       };
     });
 
+    const debtPayloads = debtDrafts.map((debt) => {
+      if (!debt.name.trim()) {
+        throw new Error("Every debt needs a lender name.");
+      }
+      const balance = parseAmountToCents(debt.currentBalance);
+      if (balance === null || Number.isNaN(balance)) {
+        throw new Error("Every debt needs a current balance.");
+      }
+      const parsedApr = debt.apr ? Number.parseFloat(debt.apr) : null;
+      const parsedDue = debt.dueDay ? Number.parseInt(debt.dueDay, 10) : null;
+
+      return {
+        name: debt.name.trim(),
+        type: "loan",
+        startingBalance: balance,
+        apr: parsedApr ?? undefined,
+        statementDueDay: parsedDue ?? undefined,
+      };
+    });
+
     setSaving(true);
     try {
       await Promise.all(
-        payloads.map((payload) =>
+        [...payloads, ...debtPayloads].map((payload) =>
           fetchJson("/api/accounts", {
             method: "POST",
             body: JSON.stringify(payload),
@@ -451,6 +561,131 @@ export function SetupHubClient() {
             </div>
             );
           })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Debts & obligations</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Add loans and obligations that are not credit cards. This helps keep payoff and
+            projection views accurate.
+          </p>
+
+          {linkedLoanDrafts.length ? (
+            <div className="rounded-lg border border-dashed border-muted-foreground/40 bg-muted/30 p-3 text-sm">
+              <p className="font-semibold text-foreground">Loan accounts already added</p>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                {linkedLoanDrafts.map((loan) => {
+                  const balance =
+                    parseAmountToCents(loan.startingBalance) ?? null;
+                  return (
+                    <div key={loan.id} className="rounded-md border bg-background p-2">
+                      <p className="text-sm font-medium">{loan.name || "Loan account"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Balance{" "}
+                        {balance !== null ? formatCurrency(balance) : "not provided"}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                You can update loan balances in the Accounts section above.
+              </p>
+            </div>
+          ) : null}
+
+          {debtDrafts.map((debt, index) => {
+            const errors = debtErrors[debt.id] ?? {};
+            const showErrors = hasDebtInput(debt);
+
+            return (
+              <div key={debt.id} className="rounded-lg border bg-muted/20 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-semibold">Debt {index + 1}</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeDebtDraft(debt.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Remove
+                  </Button>
+                </div>
+                <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="space-y-1">
+                    <Label>Lender name</Label>
+                    <Input
+                      value={debt.name}
+                      onChange={(event) =>
+                        updateDebtDraft(debt.id, { name: event.target.value })
+                      }
+                      placeholder="Student loan, Auto loan"
+                      className={`min-w-0 ${errors.name && showErrors ? "border-rose-500" : ""}`}
+                    />
+                    {errors.name && showErrors ? (
+                      <p className="text-xs text-rose-600">{errors.name}</p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Current balance</Label>
+                    <Input
+                      inputMode="decimal"
+                      value={debt.currentBalance}
+                      onChange={(event) =>
+                        updateDebtDraft(debt.id, { currentBalance: event.target.value })
+                      }
+                      placeholder="12000.00"
+                      className={`min-w-0 ${
+                        errors.currentBalance && showErrors ? "border-rose-500" : ""
+                      }`}
+                    />
+                    {errors.currentBalance && showErrors ? (
+                      <p className="text-xs text-rose-600">{errors.currentBalance}</p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-1">
+                    <Label>APR (%)</Label>
+                    <Input
+                      inputMode="decimal"
+                      value={debt.apr}
+                      onChange={(event) => updateDebtDraft(debt.id, { apr: event.target.value })}
+                      placeholder="5.99"
+                      className={`min-w-0 ${errors.apr && showErrors ? "border-rose-500" : ""}`}
+                    />
+                    {errors.apr && showErrors ? (
+                      <p className="text-xs text-rose-600">{errors.apr}</p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Due day</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={debt.dueDay}
+                      onChange={(event) =>
+                        updateDebtDraft(debt.id, { dueDay: event.target.value })
+                      }
+                      placeholder="1"
+                      className={`min-w-0 ${
+                        errors.dueDay && showErrors ? "border-rose-500" : ""
+                      }`}
+                    />
+                    {errors.dueDay && showErrors ? (
+                      <p className="text-xs text-rose-600">{errors.dueDay}</p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <Button type="button" variant="outline" onClick={addDebtDraft}>
+            Add another debt
+          </Button>
         </CardContent>
       </Card>
 

@@ -157,9 +157,9 @@ Inline validation behavior:
 - [x] Persist advanced values to account create/update APIs.
 
 ### Step 2: Debts & Obligations
-- [ ] Add debt rows (lender, current balance, APR, due day).
-- [ ] Validate balances and day ranges.
-- [ ] Link loan-type accounts from Step 1 for confirmation.
+- [x] Add debt rows (lender, current balance, APR, due day).
+- [x] Validate balances and day ranges.
+- [x] Link loan-type accounts from Step 1 for confirmation.
 
 ### Step 3: Categories & Rules
 - [ ] Offer a default category set (toggle to accept).

@@ -14,7 +14,7 @@ create table if not exists public.accounts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
   name text not null,
-  type text not null check (type in ('checking','savings','credit','cash','investment','other')),
+  type text not null check (type in ('checking','savings','credit','loan','cash','investment','other')),
   institution text,
   last4 text,
   credit_limit integer,
