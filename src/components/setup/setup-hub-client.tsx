@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,9 +12,10 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toolbar } from "@/components/ui/toolbar";
-import { accountTypes } from "@/lib/validators";
+import { accountTypes, categoryKinds } from "@/lib/validators";
 import { parseAmountToCents, formatCurrency } from "@/lib/format";
 import { fetchJson } from "@/lib/api-client";
+import type { CategoryRecord } from "@/types/finance";
 
 type AccountDraft = {
   id: string;
@@ -56,6 +57,62 @@ type DebtErrors = {
   dueDay?: string;
 };
 
+type CategoryDraft = {
+  id: string;
+  name: string;
+  kind: "expense" | "income";
+};
+
+type CategoryErrors = {
+  name?: string;
+};
+
+type RuleTemplate = {
+  id: string;
+  label: string;
+  matchDescription: string;
+  categoryName: string;
+};
+
+const defaultCategories: Array<{ name: string; kind: "expense" | "income" }> = [
+  { name: "Salary", kind: "income" },
+  { name: "Interest", kind: "income" },
+  { name: "Refunds", kind: "income" },
+  { name: "Rent", kind: "expense" },
+  { name: "Groceries", kind: "expense" },
+  { name: "Utilities", kind: "expense" },
+  { name: "Dining", kind: "expense" },
+  { name: "Transportation", kind: "expense" },
+  { name: "Entertainment", kind: "expense" },
+  { name: "Health", kind: "expense" },
+  { name: "Insurance", kind: "expense" },
+  { name: "Travel", kind: "expense" },
+  { name: "Shopping", kind: "expense" },
+  { name: "Subscriptions", kind: "expense" },
+  { name: "Fees", kind: "expense" },
+];
+
+const ruleTemplates: RuleTemplate[] = [
+  {
+    id: "template-gas",
+    label: "Gas stations",
+    matchDescription: "gas",
+    categoryName: "Gas",
+  },
+  {
+    id: "template-rideshare",
+    label: "Rideshare",
+    matchDescription: "uber",
+    categoryName: "Rideshare",
+  },
+  {
+    id: "template-groceries",
+    label: "Groceries",
+    matchDescription: "grocery",
+    categoryName: "Groceries",
+  },
+];
+
 const newDraft = (): AccountDraft => ({
   id: `draft-${Math.random().toString(36).slice(2)}`,
   name: "",
@@ -77,6 +134,12 @@ const newDebtDraft = (): DebtDraft => ({
   currentBalance: "",
   apr: "",
   dueDay: "",
+});
+
+const newCategoryDraft = (): CategoryDraft => ({
+  id: `category-${Math.random().toString(36).slice(2)}`,
+  name: "",
+  kind: "expense",
 });
 
 const isRequiredStartingBalance = (type: string) =>
@@ -155,6 +218,14 @@ const getDebtErrors = (debt: DebtDraft): DebtErrors => {
   return errors;
 };
 
+const getCategoryErrors = (category: CategoryDraft): CategoryErrors => {
+  const errors: CategoryErrors = {};
+  if (!category.name.trim()) {
+    errors.name = "Category name is required.";
+  }
+  return errors;
+};
+
 const hasDraftInput = (draft: AccountDraft) =>
   [
     draft.name,
@@ -173,10 +244,17 @@ const hasDebtInput = (debt: DebtDraft) =>
     (value) => value.trim() !== ""
   );
 
+const hasCategoryInput = (category: CategoryDraft) =>
+  [category.name].some((value) => value.trim() !== "");
+
 export function SetupHubClient() {
   const router = useRouter();
   const [drafts, setDrafts] = useState<AccountDraft[]>([newDraft()]);
   const [debtDrafts, setDebtDrafts] = useState<DebtDraft[]>([]);
+  const [customCategories, setCustomCategories] = useState<CategoryDraft[]>([]);
+  const [useDefaultCategories, setUseDefaultCategories] = useState(true);
+  const [selectedRuleTemplates, setSelectedRuleTemplates] = useState<string[]>([]);
+  const [existingCategories, setExistingCategories] = useState<CategoryRecord[]>([]);
   const [saving, setSaving] = useState(false);
 
   const updateDraft = (id: string, patch: Partial<AccountDraft>) => {
@@ -205,6 +283,26 @@ export function SetupHubClient() {
 
   const removeDebtDraft = (id: string) => {
     setDebtDrafts((prev) => prev.filter((draft) => draft.id !== id));
+  };
+
+  const updateCategoryDraft = (id: string, patch: Partial<CategoryDraft>) => {
+    setCustomCategories((prev) =>
+      prev.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft))
+    );
+  };
+
+  const addCategoryDraft = () => {
+    setCustomCategories((prev) => [...prev, newCategoryDraft()]);
+  };
+
+  const removeCategoryDraft = (id: string) => {
+    setCustomCategories((prev) => prev.filter((draft) => draft.id !== id));
+  };
+
+  const toggleRuleTemplate = (id: string) => {
+    setSelectedRuleTemplates((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
   };
 
   const linkedLoanDrafts = useMemo(
@@ -247,6 +345,13 @@ export function SetupHubClient() {
     }, {});
   }, [debtDrafts]);
 
+  const categoryErrors = useMemo(() => {
+    return customCategories.reduce<Record<string, CategoryErrors>>((acc, category) => {
+      acc[category.id] = getCategoryErrors(category);
+      return acc;
+    }, {});
+  }, [customCategories]);
+
   const hasAccountErrors = useMemo(
     () => Object.values(draftErrors).some((errors) => Object.keys(errors).length > 0),
     [draftErrors]
@@ -257,7 +362,26 @@ export function SetupHubClient() {
     [debtErrors]
   );
 
-  const hasErrors = hasAccountErrors || hasDebtErrors;
+  const hasCategoryErrors = useMemo(
+    () => Object.values(categoryErrors).some((errors) => Object.keys(errors).length > 0),
+    [categoryErrors]
+  );
+
+  const hasErrors = hasAccountErrors || hasDebtErrors || hasCategoryErrors;
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await fetchJson<CategoryRecord[]>("/api/categories");
+        setExistingCategories(data);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load categories.";
+        toast.error(message);
+      }
+    };
+    loadCategories();
+  }, []);
 
   const handleSubmit = async () => {
     if (hasErrors) {
@@ -324,8 +448,79 @@ export function SetupHubClient() {
       };
     });
 
+    const categoryKey = (name: string, kind: string) =>
+      `${name.trim().toLowerCase()}::${kind}`;
+
+    const existingCategoryMap = new Map(
+      existingCategories.map((category) => [
+        categoryKey(category.name, category.kind),
+        category,
+      ])
+    );
+
+    const defaultCategoryPayloads = useDefaultCategories ? defaultCategories : [];
+    const customCategoryPayloads = customCategories
+      .filter((category) => category.name.trim())
+      .map((category) => ({
+        name: category.name.trim(),
+        kind: category.kind,
+      }));
+
+    const categoryPayloads = [...defaultCategoryPayloads, ...customCategoryPayloads].filter(
+      (category, index, all) =>
+        index === all.findIndex((item) => categoryKey(item.name, item.kind) === categoryKey(category.name, category.kind))
+    );
+
     setSaving(true);
     try {
+      const createdCategories = await Promise.all(
+        categoryPayloads
+          .filter((category) => !existingCategoryMap.has(categoryKey(category.name, category.kind)))
+          .map((category) =>
+            fetchJson<CategoryRecord>("/api/categories", {
+              method: "POST",
+              body: JSON.stringify(category),
+            })
+          )
+      );
+
+      const categoryLookup = new Map(existingCategoryMap);
+      createdCategories.forEach((category) => {
+        categoryLookup.set(categoryKey(category.name, category.kind), category);
+      });
+
+      const selectedTemplates = ruleTemplates.filter((template) =>
+        selectedRuleTemplates.includes(template.id)
+      );
+
+      for (const template of selectedTemplates) {
+        const key = categoryKey(template.categoryName, "expense");
+        let category = categoryLookup.get(key);
+        if (!category) {
+          category = await fetchJson<CategoryRecord>("/api/categories", {
+            method: "POST",
+            body: JSON.stringify({ name: template.categoryName, kind: "expense" }),
+          });
+          categoryLookup.set(key, category);
+        }
+
+        await fetchJson("/api/rules", {
+          method: "POST",
+          body: JSON.stringify({
+            name: `${template.label} auto-category`,
+            enabled: true,
+            onlyUncategorized: true,
+            matchDescription: template.matchDescription,
+            actions: [
+              {
+                actionType: "set_category",
+                actionPayload: { categoryId: category.id },
+              },
+            ],
+          }),
+        });
+      }
+
       await Promise.all(
         [...payloads, ...debtPayloads].map((payload) =>
           fetchJson("/api/accounts", {
@@ -686,6 +881,156 @@ export function SetupHubClient() {
           <Button type="button" variant="outline" onClick={addDebtDraft}>
             Add another debt
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Categories & rules</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Default categories</p>
+                <p className="text-xs text-muted-foreground">
+                  Start with a ready-made set of common income and expense categories.
+                </p>
+              </div>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={useDefaultCategories}
+                  onChange={(event) => setUseDefaultCategories(event.target.checked)}
+                />
+                Use defaults
+              </label>
+            </div>
+            {useDefaultCategories ? (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                {defaultCategories.map((category) => (
+                  <span
+                    key={`${category.kind}-${category.name}`}
+                    className="rounded-full border bg-background px-2 py-1"
+                  >
+                    {category.name}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Custom categories</p>
+                <p className="text-xs text-muted-foreground">
+                  Add any categories you need beyond the defaults.
+                </p>
+              </div>
+              <Button type="button" variant="outline" onClick={addCategoryDraft}>
+                Add category
+              </Button>
+            </div>
+
+            {customCategories.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                No custom categories yet.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {customCategories.map((category) => {
+                  const errors = categoryErrors[category.id] ?? {};
+                  const showErrors = hasCategoryInput(category) || !category.name.trim();
+
+                  return (
+                    <div
+                      key={category.id}
+                      className="flex flex-wrap items-end gap-3 rounded-lg border bg-background p-3"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <Label>Category name</Label>
+                        <Input
+                          value={category.name}
+                          onChange={(event) =>
+                            updateCategoryDraft(category.id, {
+                              name: event.target.value,
+                            })
+                          }
+                          placeholder="Childcare, Side income"
+                          className={`min-w-0 ${
+                            errors.name && showErrors ? "border-rose-500" : ""
+                          }`}
+                        />
+                        {errors.name && showErrors ? (
+                          <p className="text-xs text-rose-600">{errors.name}</p>
+                        ) : null}
+                      </div>
+                      <div className="w-[160px] space-y-1">
+                        <Label>Kind</Label>
+                        <Select
+                          value={category.kind}
+                          onValueChange={(value) =>
+                            updateCategoryDraft(category.id, {
+                              kind: value as CategoryDraft["kind"],
+                            })
+                          }
+                        >
+                          <SelectTrigger className="min-w-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categoryKinds.map((kind) => (
+                              <SelectItem key={kind} value={kind}>
+                                {kind}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => removeCategoryDraft(category.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="text-sm font-semibold">Rule templates (optional)</p>
+            <p className="text-xs text-muted-foreground">
+              Pick a couple of starter automation rules to keep categories clean.
+            </p>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              {ruleTemplates.map((template) => (
+                <label
+                  key={template.id}
+                  className="flex items-start gap-2 rounded-lg border bg-background p-3 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4"
+                    checked={selectedRuleTemplates.includes(template.id)}
+                    onChange={() => toggleRuleTemplate(template.id)}
+                  />
+                  <span>
+                    <span className="font-medium">{template.label}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Matches "{template.matchDescription}" and sets{" "}
+                      {template.categoryName}.
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

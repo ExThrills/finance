@@ -162,9 +162,9 @@ Inline validation behavior:
 - [x] Link loan-type accounts from Step 1 for confirmation.
 
 ### Step 3: Categories & Rules
-- [ ] Offer a default category set (toggle to accept).
-- [ ] Allow quick add custom categories.
-- [ ] Add a "rules template" picker (optional).
+- [x] Offer a default category set (toggle to accept).
+- [x] Allow quick add custom categories.
+- [x] Add a "rules template" picker (optional).
 
 ### Step 4: Recurring & Paydays
 - [ ] Add recurring income and bill rows.
