@@ -44,11 +44,14 @@ export async function POST(request: Request) {
     }
     const { data, error } = await supabaseAdmin
       .from("categories")
-      .insert({
-        user_id: userId,
-        name: parsed.data.name,
-        kind: parsed.data.kind,
-      })
+      .upsert(
+        {
+          user_id: userId,
+          name: parsed.data.name,
+          kind: parsed.data.kind,
+        },
+        { onConflict: "user_id,name,kind" }
+      )
       .select()
       .single();
 
