@@ -433,6 +433,8 @@ export function SetupHubClient() {
     let cashTotal = 0;
     let creditLimit = 0;
     let creditBalance = 0;
+    let debtTotal = 0;
+    let recurringNet = 0;
 
     drafts.forEach((draft) => {
       const starting = parseAmountToCents(draft.startingBalance) ?? 0;
@@ -446,9 +448,23 @@ export function SetupHubClient() {
       }
     });
 
+    debtDrafts.forEach((debt) => {
+      const balance = parseAmountToCents(debt.currentBalance) ?? 0;
+      debtTotal += balance;
+    });
+
+    recurringDrafts.forEach((recurring) => {
+      const amount = parseAmountToCents(recurring.amount) ?? 0;
+      if (recurring.cadence === "weekly") {
+        recurringNet += Math.round(amount * (52 / 12));
+      } else {
+        recurringNet += amount;
+      }
+    });
+
     const utilization = creditLimit > 0 ? creditBalance / creditLimit : 0;
-    return { cashTotal, creditLimit, creditBalance, utilization };
-  }, [drafts]);
+    return { cashTotal, creditLimit, creditBalance, utilization, debtTotal, recurringNet };
+  }, [drafts, debtDrafts, recurringDrafts]);
 
   const draftErrors = useMemo(() => {
     return drafts.reduce<Record<string, DraftErrors>>((acc, draft) => {
@@ -1447,7 +1463,7 @@ export function SetupHubClient() {
         <CardHeader>
           <CardTitle>Quick review</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
+        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
               Cash on hand
@@ -1466,6 +1482,20 @@ export function SetupHubClient() {
             </p>
             <p className="text-2xl font-semibold">
               {summary.creditLimit > 0 ? `${(summary.utilization * 100).toFixed(1)}%` : "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
+              Total debt
+            </p>
+            <p className="text-2xl font-semibold">{formatCurrency(summary.debtTotal)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
+              Recurring net (monthly)
+            </p>
+            <p className="text-2xl font-semibold">
+              {summary.recurringNet ? formatCurrency(summary.recurringNet) : "—"}
             </p>
           </div>
         </CardContent>

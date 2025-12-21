@@ -172,9 +172,9 @@ Inline validation behavior:
 - [x] Store frequency and next date.
 
 ### Step 5: Quick Review Summary
-- [ ] Calculate totals (cash on hand, credit limits, utilization, debt, recurring net).
-- [ ] Display summary cards with clear labels.
-- [ ] Handle edge cases (no credit accounts, zero limits).
+- [x] Calculate totals (cash on hand, credit limits, utilization, debt, recurring net).
+- [x] Display summary cards with clear labels.
+- [x] Handle edge cases (no credit accounts, zero limits).
 
 ### Step 6: Primary Actions
 - [ ] Add "Finish setup" button and success flow.
