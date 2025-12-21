@@ -145,8 +145,8 @@ Inline validation behavior:
 
 ### Step 1: Accounts & Balances
 - [ ] Finalize the row layout (name, type, starting balance/credit limit).
-- [ ] Add inline validation per row (name required, balance required, limit required).
-- [ ] Disable "Finish setup" until all rows validate.
+- [x] Add inline validation per row (name required, balance required, limit required).
+- [x] Disable "Finish setup" until all rows validate.
 - [ ] Add ability to remove a row and reindex labels.
 - [ ] Ensure multiple accounts can be added without layout overflow.
 
@@ -182,8 +182,8 @@ Inline validation behavior:
 - [ ] Confirm navigation to Transactions after completion.
 
 ### Validation & UX
-- [ ] Error messages per row (friendly copy).
-- [ ] Highlight missing fields with focus and helper text.
+- [x] Error messages per row (friendly copy).
+- [x] Highlight missing fields with focus and helper text.
 - [ ] Keyboard navigation across rows and fields.
 - [ ] Ensure focus states are visible on all inputs and buttons.
 
