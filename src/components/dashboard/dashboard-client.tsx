@@ -303,7 +303,7 @@ export function DashboardClient() {
     () => [
       {
         id: "account",
-        label: "Add your first account",
+        label: "Complete setup hub",
         complete: accounts.length > 0,
       },
       {
@@ -459,6 +459,15 @@ export function DashboardClient() {
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3 text-sm">
               <div>
+                New here? The setup hub walks you through accounts, categories, and recurring
+                items.
+              </div>
+              <Button asChild variant="outline">
+                <Link href="/setup">Open setup hub</Link>
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3 text-sm">
+              <div>
                 Prefer a guided tour? Load a safe set of sample accounts and transactions.
                 {!canLoadSampleData ? " Sample data is only available for empty workspaces." : ""}
               </div>
@@ -490,9 +499,6 @@ export function DashboardClient() {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild>
-              <Link href="/accounts">Add an account</Link>
-            </Button>
-            <Button asChild variant="outline">
               <Link href="/setup">Open setup hub</Link>
             </Button>
             <Button asChild variant="outline">

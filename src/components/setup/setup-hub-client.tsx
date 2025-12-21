@@ -155,6 +155,8 @@ const recurringTemplates = [
   },
 ];
 
+const setupStartKey = "setupHubStartedAt";
+
 const newDraft = (): AccountDraft => ({
   id: `draft-${Math.random().toString(36).slice(2)}`,
   name: "",
@@ -349,6 +351,7 @@ export function SetupHubClient() {
   const [selectedRuleTemplates, setSelectedRuleTemplates] = useState<string[]>([]);
   const [existingCategories, setExistingCategories] = useState<CategoryRecord[]>([]);
   const [saving, setSaving] = useState(false);
+  const [setupStartedAt, setSetupStartedAt] = useState<number | null>(null);
 
   const updateDraft = (id: string, patch: Partial<AccountDraft>) => {
     setDrafts((prev) =>
@@ -565,6 +568,20 @@ export function SetupHubClient() {
     loadCategories();
   }, []);
 
+  useEffect(() => {
+    const stored = window.localStorage.getItem(setupStartKey);
+    if (stored) {
+      const parsed = Number.parseInt(stored, 10);
+      if (!Number.isNaN(parsed)) {
+        setSetupStartedAt(parsed);
+        return;
+      }
+    }
+    const now = Date.now();
+    window.localStorage.setItem(setupStartKey, String(now));
+    setSetupStartedAt(now);
+  }, []);
+
   const handleSubmit = async () => {
     if (hasErrors) {
       toast.error("Fix the highlighted fields before finishing setup.");
@@ -763,6 +780,25 @@ export function SetupHubClient() {
         );
       }
 
+      if (setupStartedAt) {
+        try {
+          await fetchJson("/api/setup/complete", {
+            method: "POST",
+            body: JSON.stringify({
+              startedAt: setupStartedAt,
+              completedAt: Date.now(),
+              accountsCount: payloads.length,
+              debtsCount: debtPayloads.length,
+              categoriesCount: categoryPayloads.length,
+              recurringCount: recurringDrafts.length,
+            }),
+          });
+          window.localStorage.removeItem(setupStartKey);
+        } catch (error) {
+          console.warn("Failed to record setup completion", error);
+        }
+      }
+
       toast.success("Accounts created.");
       router.push("/transactions");
     } catch (error) {
@@ -855,6 +891,12 @@ export function SetupHubClient() {
                       className={`min-w-0 ${
                         errors.creditLimit && showErrors ? "border-rose-500" : ""
                       }`}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addDraft();
+                        }
+                      }}
                     />
                     {errors.creditLimit && showErrors ? (
                       <p className="text-xs text-rose-600">{errors.creditLimit}</p>
@@ -873,6 +915,12 @@ export function SetupHubClient() {
                       className={`min-w-0 ${
                         errors.startingBalance && showErrors ? "border-rose-500" : ""
                       }`}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addDraft();
+                        }
+                      }}
                     />
                     {errors.startingBalance && showErrors ? (
                       <p className="text-xs text-rose-600">{errors.startingBalance}</p>
@@ -1102,6 +1150,12 @@ export function SetupHubClient() {
                       className={`min-w-0 ${
                         errors.dueDay && showErrors ? "border-rose-500" : ""
                       }`}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addDebtDraft();
+                        }
+                      }}
                     />
                     {errors.dueDay && showErrors ? (
                       <p className="text-xs text-rose-600">{errors.dueDay}</p>
@@ -1134,7 +1188,7 @@ export function SetupHubClient() {
               <label className="flex items-center gap-2 text-sm font-medium">
                 <input
                   type="checkbox"
-                  className="h-4 w-4"
+                  className="h-4 w-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   checked={useDefaultCategories}
                   onChange={(event) => setUseDefaultCategories(event.target.checked)}
                 />
@@ -1196,6 +1250,12 @@ export function SetupHubClient() {
                           className={`min-w-0 ${
                             errors.name && showErrors ? "border-rose-500" : ""
                           }`}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              addCategoryDraft();
+                            }
+                          }}
                         />
                         {errors.name && showErrors ? (
                           <p className="text-xs text-rose-600">{errors.name}</p>
@@ -1250,7 +1310,7 @@ export function SetupHubClient() {
                 >
                   <input
                     type="checkbox"
-                    className="mt-1 h-4 w-4"
+                    className="mt-1 h-4 w-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     checked={selectedRuleTemplates.includes(template.id)}
                     onChange={() => toggleRuleTemplate(template.id)}
                   />
@@ -1445,6 +1505,12 @@ export function SetupHubClient() {
                           className={`min-w-0 ${
                             errors.nextDate && showErrors ? "border-rose-500" : ""
                           }`}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              addRecurringDraft();
+                            }
+                          }}
                         />
                         {errors.nextDate && showErrors ? (
                           <p className="text-xs text-rose-600">{errors.nextDate}</p>

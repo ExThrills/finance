@@ -184,15 +184,15 @@ Inline validation behavior:
 ### Validation & UX
 - [x] Error messages per row (friendly copy).
 - [x] Highlight missing fields with focus and helper text.
-- [ ] Keyboard navigation across rows and fields.
-- [ ] Ensure focus states are visible on all inputs and buttons.
+- [x] Keyboard navigation across rows and fields.
+- [x] Ensure focus states are visible on all inputs and buttons.
 
 ### Integration Points
-- [ ] Link Setup Hub from dashboard checklist and sidebar.
-- [ ] Deprecate older onboarding entry points if needed.
-- [ ] Update docs to reflect Setup Hub as primary entry.
+- [x] Link Setup Hub from dashboard checklist and sidebar.
+- [x] Deprecate older onboarding entry points if needed.
+- [x] Update docs to reflect Setup Hub as primary entry.
 
 ### QA & Analytics
-- [ ] Manual QA: 1 account, multiple accounts, credit-only, mixed types.
-- [ ] Verify stored balances/limits in Accounts page.
-- [ ] Track time-to-complete setup for new users.
+- [x] Manual QA: 1 account, multiple accounts, credit-only, mixed types.
+- [x] Verify stored balances/limits in Accounts page.
+- [x] Track time-to-complete setup for new users.

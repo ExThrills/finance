@@ -3,7 +3,7 @@
 Welcome to Ledgerly. This guide is written for end users, not developers. It explains what each area does, how the data flows, and the best order to set things up.
 
 ## Quick Start (5–10 minutes)
-1) Add at least one account.
+1) Open the **Setup Hub** and add at least one account.
 2) Add your categories.
 3) Add your first transactions.
 4) Review your dashboard.
@@ -23,7 +23,7 @@ Ledgerly is built around these ideas:
 - Automation rules: If/then logic to auto‑categorize or tag.
 
 ## Step 1: Set Up Accounts
-Go to **Accounts** and add each financial account.
+Go to **Setup Hub** (or **Accounts**) and add each financial account.
 
 For each account, you can (optionally) add:
 - Institution (e.g., Chase)
