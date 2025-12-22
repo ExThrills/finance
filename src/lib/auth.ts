@@ -46,7 +46,7 @@ export async function getCurrentUser() {
 }
 
 export async function getCurrentUserId() {
-  const authHeader = headers().get(authHeaderName) ?? "";
+  const authHeader = (await headers()).get(authHeaderName) ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
   if (token) {
