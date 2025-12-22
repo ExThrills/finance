@@ -14,8 +14,8 @@ export async function POST() {
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: userId },
       client_name: "Nestfolio",
-      products: [
-        Products.Transactions,
+      products: [Products.Transactions],
+      optional_products: [
         Products.Balance,
         Products.Liabilities,
         Products.Investments,
