@@ -274,3 +274,53 @@ create table if not exists public.rule_actions (
   created_at timestamptz not null default now()
 );
 create index if not exists idx_rule_actions_rule on public.rule_actions(rule_id);
+
+create table if not exists public.plaid_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  item_id text not null,
+  access_token text not null,
+  institution_name text,
+  institution_id text,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  constraint plaid_items_unique_item unique (item_id)
+);
+create index if not exists idx_plaid_items_user on public.plaid_items(user_id);
+
+create table if not exists public.plaid_accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  plaid_item_id uuid not null references public.plaid_items(id) on delete cascade,
+  plaid_account_id text not null,
+  account_id uuid references public.accounts(id) on delete set null,
+  name text,
+  type text,
+  subtype text,
+  mask text,
+  created_at timestamptz not null default now(),
+  constraint plaid_accounts_unique_account unique (plaid_account_id)
+);
+create index if not exists idx_plaid_accounts_user on public.plaid_accounts(user_id);
+create index if not exists idx_plaid_accounts_item on public.plaid_accounts(plaid_item_id);
+
+create table if not exists public.plaid_sync_state (
+  id uuid primary key default gen_random_uuid(),
+  plaid_item_id uuid not null references public.plaid_items(id) on delete cascade,
+  cursor text,
+  last_synced_at timestamptz,
+  constraint plaid_sync_unique_item unique (plaid_item_id)
+);
+create index if not exists idx_plaid_sync_item on public.plaid_sync_state(plaid_item_id);
+
+create table if not exists public.plaid_transaction_map (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  transaction_id uuid not null references public.transactions(id) on delete cascade,
+  plaid_transaction_id text not null,
+  plaid_account_id text,
+  created_at timestamptz not null default now(),
+  constraint plaid_transaction_map_unique_plaid_tx unique (plaid_transaction_id)
+);
+create index if not exists idx_plaid_tx_map_user on public.plaid_transaction_map(user_id);
+create index if not exists idx_plaid_tx_map_tx on public.plaid_transaction_map(transaction_id);

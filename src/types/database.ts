@@ -85,6 +85,179 @@ export type Database = {
           },
         ]
       }
+      plaid_items: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          institution_id: string | null
+          institution_name: string | null
+          item_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plaid_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plaid_accounts: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          id: string
+          mask: string | null
+          name: string | null
+          plaid_account_id: string
+          plaid_item_id: string
+          subtype: string | null
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          mask?: string | null
+          name?: string | null
+          plaid_account_id: string
+          plaid_item_id: string
+          subtype?: string | null
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          mask?: string | null
+          name?: string | null
+          plaid_account_id?: string
+          plaid_item_id?: string
+          subtype?: string | null
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plaid_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plaid_accounts_plaid_item_id_fkey"
+            columns: ["plaid_item_id"]
+            isOneToOne: false
+            referencedRelation: "plaid_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plaid_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plaid_sync_state: {
+        Row: {
+          cursor: string | null
+          id: string
+          last_synced_at: string | null
+          plaid_item_id: string
+        }
+        Insert: {
+          cursor?: string | null
+          id?: string
+          last_synced_at?: string | null
+          plaid_item_id: string
+        }
+        Update: {
+          cursor?: string | null
+          id?: string
+          last_synced_at?: string | null
+          plaid_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plaid_sync_state_plaid_item_id_fkey"
+            columns: ["plaid_item_id"]
+            isOneToOne: true
+            referencedRelation: "plaid_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plaid_transaction_map: {
+        Row: {
+          created_at: string
+          id: string
+          plaid_account_id: string | null
+          plaid_transaction_id: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plaid_account_id?: string | null
+          plaid_transaction_id: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plaid_account_id?: string | null
+          plaid_transaction_id?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plaid_transaction_map_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plaid_transaction_map_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_rules: {
         Row: {
           account_id: string | null

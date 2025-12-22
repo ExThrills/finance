@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toolbar } from "@/components/ui/toolbar";
+import { PlaidLinkButton } from "@/components/setup/plaid-link-button";
 import { accountTypes, categoryKinds } from "@/lib/validators";
 import { parseAmountToCents, formatCurrency, formatDateInput } from "@/lib/format";
 import { fetchJson } from "@/lib/api-client";
@@ -821,6 +822,19 @@ export function SetupHubClient() {
           </Button>
         }
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Connect accounts (optional)</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-muted-foreground">
+            Link your bank, credit, loan, and investment accounts to auto-sync balances and
+            transactions.
+          </div>
+          <PlaidLinkButton />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
