@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Bell, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { AccountScopeSwitcher } from "@/components/account-scope-switcher";
 import { Button } from "@/components/ui/button";
 import { fetchJson } from "@/lib/api-client";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { AlertRecord } from "@/types/finance";
 
 export function TopBar() {
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const load = async () => {
@@ -31,6 +34,11 @@ export function TopBar() {
     () => alerts.filter((alert) => !alert.acknowledgedAt).length,
     [alerts]
   );
+
+  const handleSignOut = async () => {
+    await supabaseBrowser.auth.signOut();
+    router.replace("/auth/sign-in");
+  };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
@@ -65,6 +73,9 @@ export function TopBar() {
               </span>
             ) : null}
           </Link>
+        </Button>
+        <Button variant="ghost" onClick={handleSignOut}>
+          Sign out
         </Button>
       </div>
     </div>
