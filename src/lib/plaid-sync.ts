@@ -143,6 +143,7 @@ export async function syncPlaidItem(userId: string, plaidItem: { id: string; acc
         return;
       }
 
+      const normalizedAmount = Math.abs(amount);
       const name = tx.name || tx.merchant_name || "Transaction";
       const kind = mapKind(tx.amount);
       const categoryName = getCategoryName(tx);
@@ -157,7 +158,7 @@ export async function syncPlaidItem(userId: string, plaidItem: { id: string; acc
           .from("transactions")
           .update({
             account_id: accountId,
-            amount,
+            amount: normalizedAmount,
             date: tx.date,
             description: name,
             category_id: categoryId,
@@ -173,7 +174,7 @@ export async function syncPlaidItem(userId: string, plaidItem: { id: string; acc
         .insert({
           user_id: userId,
           account_id: accountId,
-          amount,
+          amount: normalizedAmount,
           date: tx.date,
           description: name,
           category_id: categoryId,
