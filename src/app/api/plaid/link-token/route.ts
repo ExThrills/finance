@@ -27,7 +27,11 @@ export async function POST() {
 
     return NextResponse.json({ link_token: response.data.link_token });
   } catch (error) {
-    console.error("POST /api/plaid/link-token failed", error);
+    const responseData =
+      error && typeof error === "object" && "response" in error
+        ? (error as { response?: { data?: unknown } }).response?.data
+        : null;
+    console.error("POST /api/plaid/link-token failed", error, responseData);
     return NextResponse.json(
       { error: "Failed to create link token." },
       { status: 500 }
