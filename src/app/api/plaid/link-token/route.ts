@@ -15,11 +15,7 @@ export async function POST() {
       user: { client_user_id: userId },
       client_name: "Nestfolio",
       products: [Products.Transactions],
-      optional_products: [
-        Products.Balance,
-        Products.Liabilities,
-        Products.Investments,
-      ],
+      optional_products: [Products.Liabilities, Products.Investments],
       country_codes: [CountryCode.Us],
       language: "en",
       webhook: webhook || undefined,
