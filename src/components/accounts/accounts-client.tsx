@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchJson } from "@/lib/api-client";
 import { accountTypes } from "@/lib/validators";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, parseAmountToCents } from "@/lib/format";
 import type { AccountRecord, TransactionWithRelations } from "@/types/finance";
 
 const dayToLabel = (day: number | null) => {
@@ -57,6 +57,11 @@ type QuickAccountDraft = {
   name: string;
   type: string;
   last4: string;
+  startingBalance: string;
+  creditLimit: string;
+  apr: string;
+  statementCloseDay: string;
+  statementDueDay: string;
 };
 
 const createQuickAccountDraft = (): QuickAccountDraft => ({
@@ -64,6 +69,11 @@ const createQuickAccountDraft = (): QuickAccountDraft => ({
   name: "",
   type: "checking",
   last4: "",
+  startingBalance: "",
+  creditLimit: "",
+  apr: "",
+  statementCloseDay: "",
+  statementDueDay: "",
 });
 
 export function AccountsClient() {
@@ -138,6 +148,15 @@ export function AccountsClient() {
           institution: quickInstitution.trim(),
           last4:
             draft.last4.trim().length === 4 ? draft.last4.trim() : undefined,
+          startingBalance: parseAmountToCents(draft.startingBalance) ?? undefined,
+          creditLimit: parseAmountToCents(draft.creditLimit) ?? undefined,
+          apr: draft.apr ? Number.parseFloat(draft.apr) : undefined,
+          statementCloseDay: draft.statementCloseDay
+            ? Number.parseInt(draft.statementCloseDay, 10)
+            : undefined,
+          statementDueDay: draft.statementDueDay
+            ? Number.parseInt(draft.statementDueDay, 10)
+            : undefined,
         },
       }))
       .filter((entry) => entry.payload.name.length > 0);
@@ -424,95 +443,221 @@ export function AccountsClient() {
               {quickAccounts.map((draft, index) => (
                 <div
                   key={draft.id}
-                  className="grid gap-4 lg:grid-cols-[1fr_200px_140px_auto] lg:items-end"
+                  className="space-y-3 rounded-lg border bg-background p-3"
                 >
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor={`quick-name-${draft.id}`}
-                      className={index === 0 ? "" : "sr-only"}
-                    >
-                      Account name
-                    </Label>
-                    <Input
-                      id={`quick-name-${draft.id}`}
-                      value={draft.name}
-                      onChange={(event) =>
-                        setQuickAccounts((prev) =>
-                          prev.map((entry) =>
-                            entry.id === draft.id
-                              ? { ...entry, name: event.target.value }
-                              : entry
+                  <div className="grid gap-4 lg:grid-cols-[1fr_200px_140px_auto] lg:items-end">
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor={`quick-name-${draft.id}`}
+                        className={index === 0 ? "" : "sr-only"}
+                      >
+                        Account name
+                      </Label>
+                      <Input
+                        id={`quick-name-${draft.id}`}
+                        value={draft.name}
+                        onChange={(event) =>
+                          setQuickAccounts((prev) =>
+                            prev.map((entry) =>
+                              entry.id === draft.id
+                                ? { ...entry, name: event.target.value }
+                                : entry
+                            )
                           )
-                        )
-                      }
-                      placeholder="Checking, Savings 1"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className={index === 0 ? "" : "sr-only"}>Type</Label>
-                    <Select
-                      value={draft.type}
-                      onValueChange={(value) =>
-                        setQuickAccounts((prev) =>
-                          prev.map((entry) =>
-                            entry.id === draft.id
-                              ? { ...entry, type: value }
-                              : entry
+                        }
+                        placeholder="Checking, Savings 1"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className={index === 0 ? "" : "sr-only"}>Type</Label>
+                      <Select
+                        value={draft.type}
+                        onValueChange={(value) =>
+                          setQuickAccounts((prev) =>
+                            prev.map((entry) =>
+                              entry.id === draft.id
+                                ? { ...entry, type: value }
+                                : entry
+                            )
                           )
-                        )
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accountTypes.map((accountType) => (
-                          <SelectItem key={accountType} value={accountType}>
-                            {accountType}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor={`quick-last4-${draft.id}`}
-                      className={index === 0 ? "" : "sr-only"}
-                    >
-                      Last 4
-                    </Label>
-                    <Input
-                      id={`quick-last4-${draft.id}`}
-                      value={draft.last4}
-                      onChange={(event) =>
-                        setQuickAccounts((prev) =>
-                          prev.map((entry) =>
-                            entry.id === draft.id
-                              ? { ...entry, last4: event.target.value }
-                              : entry
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accountTypes.map((accountType) => (
+                            <SelectItem key={accountType} value={accountType}>
+                              {accountType}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor={`quick-last4-${draft.id}`}
+                        className={index === 0 ? "" : "sr-only"}
+                      >
+                        Last 4
+                      </Label>
+                      <Input
+                        id={`quick-last4-${draft.id}`}
+                        value={draft.last4}
+                        onChange={(event) =>
+                          setQuickAccounts((prev) =>
+                            prev.map((entry) =>
+                              entry.id === draft.id
+                                ? { ...entry, last4: event.target.value }
+                                : entry
+                            )
                           )
-                        )
-                      }
-                      placeholder="1234"
-                      maxLength={4}
-                    />
+                        }
+                        placeholder="1234"
+                        maxLength={4}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() =>
+                          setQuickAccounts((prev) =>
+                            prev.length === 1
+                              ? prev
+                              : prev.filter((entry) => entry.id !== draft.id)
+                          )
+                        }
+                        disabled={quickAccounts.length === 1}
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() =>
-                        setQuickAccounts((prev) =>
-                          prev.length === 1
-                            ? prev
-                            : prev.filter((entry) => entry.id !== draft.id)
-                        )
-                      }
-                      disabled={quickAccounts.length === 1}
-                    >
-                      Remove
-                    </Button>
+
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="space-y-1">
+                      <Label htmlFor={`quick-balance-${draft.id}`}>
+                        {draft.type === "credit"
+                          ? "Current balance"
+                          : "Balance"}
+                      </Label>
+                      <Input
+                        id={`quick-balance-${draft.id}`}
+                        inputMode="decimal"
+                        value={draft.startingBalance}
+                        onChange={(event) =>
+                          setQuickAccounts((prev) =>
+                            prev.map((entry) =>
+                              entry.id === draft.id
+                                ? {
+                                    ...entry,
+                                    startingBalance: event.target.value,
+                                  }
+                                : entry
+                            )
+                          )
+                        }
+                        placeholder="2500.00"
+                      />
+                    </div>
+                    {draft.type === "credit" ? (
+                      <>
+                        <div className="space-y-1">
+                          <Label htmlFor={`quick-limit-${draft.id}`}>
+                            Credit limit
+                          </Label>
+                          <Input
+                            id={`quick-limit-${draft.id}`}
+                            inputMode="decimal"
+                            value={draft.creditLimit}
+                            onChange={(event) =>
+                              setQuickAccounts((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === draft.id
+                                    ? {
+                                        ...entry,
+                                        creditLimit: event.target.value,
+                                      }
+                                    : entry
+                                )
+                              )
+                            }
+                            placeholder="5000.00"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`quick-apr-${draft.id}`}>APR (%)</Label>
+                          <Input
+                            id={`quick-apr-${draft.id}`}
+                            inputMode="decimal"
+                            value={draft.apr}
+                            onChange={(event) =>
+                              setQuickAccounts((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === draft.id
+                                    ? { ...entry, apr: event.target.value }
+                                    : entry
+                                )
+                              )
+                            }
+                            placeholder="19.99"
+                          />
+                        </div>
+                      </>
+                    ) : null}
                   </div>
+
+                  {draft.type === "credit" ? (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label htmlFor={`quick-close-${draft.id}`}>
+                          Statement close day
+                        </Label>
+                        <Input
+                          id={`quick-close-${draft.id}`}
+                          inputMode="numeric"
+                          value={draft.statementCloseDay}
+                          onChange={(event) =>
+                            setQuickAccounts((prev) =>
+                              prev.map((entry) =>
+                                entry.id === draft.id
+                                  ? {
+                                      ...entry,
+                                      statementCloseDay: event.target.value,
+                                    }
+                                  : entry
+                              )
+                            )
+                          }
+                          placeholder="25"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor={`quick-due-${draft.id}`}>
+                          Statement due day
+                        </Label>
+                        <Input
+                          id={`quick-due-${draft.id}`}
+                          inputMode="numeric"
+                          value={draft.statementDueDay}
+                          onChange={(event) =>
+                            setQuickAccounts((prev) =>
+                              prev.map((entry) =>
+                                entry.id === draft.id
+                                  ? {
+                                      ...entry,
+                                      statementDueDay: event.target.value,
+                                    }
+                                  : entry
+                              )
+                            )
+                          }
+                          placeholder="15"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
