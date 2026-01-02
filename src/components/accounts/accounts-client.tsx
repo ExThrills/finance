@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,8 @@ export function AccountsClient() {
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>(
     []
   );
+  const quickFormRef = useRef<HTMLDivElement>(null);
+  const quickInstitutionRef = useRef<HTMLInputElement>(null);
   const [quickInstitution, setQuickInstitution] = useState("");
   const [quickAccounts, setQuickAccounts] = useState<QuickAccountDraft[]>([
     createQuickAccountDraft(),
@@ -106,6 +109,16 @@ export function AccountsClient() {
   const resetQuickAccounts = () => {
     setQuickInstitution("");
     setQuickAccounts([createQuickAccountDraft()]);
+  };
+
+  const handleEditGroup = (institutionName: string) => {
+    setQuickInstitution(institutionName === "Unassigned" ? "" : institutionName);
+    setQuickAccounts((prev) => {
+      const hasEmpty = prev.some((entry) => !entry.name.trim());
+      return hasEmpty ? prev : [...prev, createQuickAccountDraft()];
+    });
+    quickFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => quickInstitutionRef.current?.focus(), 0);
   };
 
   const handleQuickSubmit = async (
@@ -373,7 +386,7 @@ export function AccountsClient() {
         description="Monitor balances, utilization, and sync health."
       />
 
-      <Card>
+      <Card ref={quickFormRef}>
         <CardHeader>
           <CardTitle>Add bank + accounts</CardTitle>
         </CardHeader>
@@ -384,6 +397,7 @@ export function AccountsClient() {
                 <Label htmlFor="quick-institution">Bank or institution</Label>
                 <Input
                   id="quick-institution"
+                  ref={quickInstitutionRef}
                   value={quickInstitution}
                   onChange={(event) => setQuickInstitution(event.target.value)}
                   placeholder="Citizens Bank"
@@ -663,13 +677,25 @@ export function AccountsClient() {
                           {group.accounts.length === 1 ? "" : "s"}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-strong">
-                          Total balance
-                        </p>
-                        <p className="text-lg font-semibold">
-                          {formatCurrency(groupTotal)}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <p className="text-xs text-muted-strong">
+                            Total balance
+                          </p>
+                          <p className="text-lg font-semibold">
+                            {formatCurrency(groupTotal)}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleEditGroup(group.institutionName)}
+                          title="Add or manage accounts"
+                          aria-label={`Edit ${group.institutionName}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
 
