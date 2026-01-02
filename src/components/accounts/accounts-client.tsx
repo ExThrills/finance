@@ -51,9 +51,29 @@ const formatRelative = (date: string | null) => {
   return `${days}d ago`;
 };
 
+type QuickAccountDraft = {
+  id: string;
+  name: string;
+  type: string;
+  last4: string;
+};
+
+const createQuickAccountDraft = (): QuickAccountDraft => ({
+  id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+  name: "",
+  type: "checking",
+  last4: "",
+});
+
 export function AccountsClient() {
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
-  const [transactions, setTransactions] = useState<TransactionWithRelations[]>([]);
+  const [transactions, setTransactions] = useState<TransactionWithRelations[]>(
+    []
+  );
+  const [quickInstitution, setQuickInstitution] = useState("");
+  const [quickAccounts, setQuickAccounts] = useState<QuickAccountDraft[]>([
+    createQuickAccountDraft(),
+  ]);
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("checking");
   const [institution, setInstitution] = useState("");
@@ -82,6 +102,74 @@ export function AccountsClient() {
     };
     load();
   }, []);
+
+  const resetQuickAccounts = () => {
+    setQuickInstitution("");
+    setQuickAccounts([createQuickAccountDraft()]);
+  };
+
+  const handleQuickSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+    if (!quickInstitution.trim()) {
+      toast.error("Bank name is required.");
+      return;
+    }
+    const prepared = quickAccounts
+      .map((draft) => ({
+        draft,
+        payload: {
+          name: draft.name.trim(),
+          type: draft.type,
+          institution: quickInstitution.trim(),
+          last4:
+            draft.last4.trim().length === 4 ? draft.last4.trim() : undefined,
+        },
+      }))
+      .filter((entry) => entry.payload.name.length > 0);
+    if (prepared.length === 0) {
+      toast.error("Add at least one account.");
+      return;
+    }
+    try {
+      const results = await Promise.allSettled(
+        prepared.map((entry) =>
+          fetchJson<AccountRecord>("/api/accounts", {
+            method: "POST",
+            body: JSON.stringify(entry.payload),
+          })
+        )
+      );
+      const created: AccountRecord[] = [];
+      const failedDrafts: QuickAccountDraft[] = [];
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          created.push(result.value);
+        } else {
+          failedDrafts.push(prepared[index].draft);
+        }
+      });
+      if (created.length) {
+        setAccounts((prev) => [...prev, ...created]);
+      }
+      if (failedDrafts.length) {
+        setQuickAccounts(failedDrafts);
+        toast.error(
+          `Added ${created.length} account${
+            created.length === 1 ? "" : "s"
+          }, ${failedDrafts.length} failed.`
+        );
+        return;
+      }
+      resetQuickAccounts();
+      toast.success("Accounts added.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create accounts.";
+      toast.error(message);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -200,6 +288,30 @@ export function AccountsClient() {
     return map;
   }, [transactions]);
 
+  const accountsByInstitution = useMemo(() => {
+    const map = new Map<string, AccountRecord[]>();
+    accounts.forEach((account) => {
+      const key = account.institution?.trim() || "Unassigned";
+      const list = map.get(key) ?? [];
+      list.push(account);
+      map.set(key, list);
+    });
+    return Array.from(map.entries())
+      .map(([institutionName, items]) => ({
+        institutionName,
+        accounts: items.sort((a, b) => a.name.localeCompare(b.name)),
+      }))
+      .sort((a, b) => {
+        if (a.institutionName === "Unassigned") {
+          return 1;
+        }
+        if (b.institutionName === "Unassigned") {
+          return -1;
+        }
+        return a.institutionName.localeCompare(b.institutionName);
+      });
+  }, [accounts]);
+
   const renderSparkline = (
     items: TransactionWithRelations[],
     accountType: string
@@ -263,7 +375,144 @@ export function AccountsClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Add account</CardTitle>
+          <CardTitle>Add bank + accounts</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleQuickSubmit} className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div className="space-y-1">
+                <Label htmlFor="quick-institution">Bank or institution</Label>
+                <Input
+                  id="quick-institution"
+                  value={quickInstitution}
+                  onChange={(event) => setQuickInstitution(event.target.value)}
+                  placeholder="Citizens Bank"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setQuickAccounts((prev) => [
+                      ...prev,
+                      createQuickAccountDraft(),
+                    ])
+                  }
+                >
+                  Add another
+                </Button>
+                <Button type="submit">Add accounts</Button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {quickAccounts.map((draft, index) => (
+                <div
+                  key={draft.id}
+                  className="grid gap-4 lg:grid-cols-[1fr_200px_140px_auto] lg:items-end"
+                >
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor={`quick-name-${draft.id}`}
+                      className={index === 0 ? "" : "sr-only"}
+                    >
+                      Account name
+                    </Label>
+                    <Input
+                      id={`quick-name-${draft.id}`}
+                      value={draft.name}
+                      onChange={(event) =>
+                        setQuickAccounts((prev) =>
+                          prev.map((entry) =>
+                            entry.id === draft.id
+                              ? { ...entry, name: event.target.value }
+                              : entry
+                          )
+                        )
+                      }
+                      placeholder="Checking, Savings 1"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className={index === 0 ? "" : "sr-only"}>Type</Label>
+                    <Select
+                      value={draft.type}
+                      onValueChange={(value) =>
+                        setQuickAccounts((prev) =>
+                          prev.map((entry) =>
+                            entry.id === draft.id
+                              ? { ...entry, type: value }
+                              : entry
+                          )
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accountTypes.map((accountType) => (
+                          <SelectItem key={accountType} value={accountType}>
+                            {accountType}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor={`quick-last4-${draft.id}`}
+                      className={index === 0 ? "" : "sr-only"}
+                    >
+                      Last 4
+                    </Label>
+                    <Input
+                      id={`quick-last4-${draft.id}`}
+                      value={draft.last4}
+                      onChange={(event) =>
+                        setQuickAccounts((prev) =>
+                          prev.map((entry) =>
+                            entry.id === draft.id
+                              ? { ...entry, last4: event.target.value }
+                              : entry
+                          )
+                        )
+                      }
+                      placeholder="1234"
+                      maxLength={4}
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() =>
+                        setQuickAccounts((prev) =>
+                          prev.length === 1
+                            ? prev
+                            : prev.filter((entry) => entry.id !== draft.id)
+                        )
+                      }
+                      disabled={quickAccounts.length === 1}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-xs text-muted-strong">
+              Group accounts under one bank so setup is quick for savings,
+              checking, and credit.
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Add single account (detailed)</CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -375,7 +624,7 @@ export function AccountsClient() {
             <CardTitle>Account dashboard</CardTitle>
             <div className="flex items-center gap-3">
               {syncing ? (
-              <span className="text-xs text-muted-strong">Syncing...</span>
+                <span className="text-xs text-muted-strong">Syncing...</span>
               ) : null}
               <Button
                 onClick={() => handleSync()}
@@ -386,172 +635,225 @@ export function AccountsClient() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {accounts.length === 0 ? (
             <EmptyState
               title="No accounts yet"
               description="Add checking and credit cards to power utilization."
             />
           ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {accounts.map((account) => {
-                const isCredit = account.type === "credit";
-                const balance = account.currentBalance;
-                const available =
-                  isCredit && account.creditLimit
-                    ? account.availableCredit ??
-                      account.creditLimit - Math.abs(balance)
-                    : account.availableBalance ?? balance;
-                const utilization =
-                  isCredit && account.creditLimit
-                    ? Math.abs(balance) / account.creditLimit
-                    : null;
-                const staleFlag = healthSummary.find(
-                  (item) => item.id === account.id
-                )?.stale;
-                const statusLabel =
-                  account.syncStatus === "ok"
-                    ? "Healthy"
-                    : account.syncStatus === "pending"
-                    ? "MFA required"
-                    : account.syncStatus === "error"
-                  ? "Error"
-                  : account.syncStatus === "disconnected"
-                  ? "Disconnected"
-                  : "Manual";
-                const sparkline = renderSparkline(
-                  transactionsByAccount.get(account.id) ?? [],
-                  account.type
+            <div className="space-y-4">
+              {accountsByInstitution.map((group) => {
+                const groupTotal = group.accounts.reduce(
+                  (sum, account) => sum + account.currentBalance,
+                  0
                 );
                 return (
                   <div
-                    key={account.id}
-                    className="rounded-xl border bg-muted/10 p-4"
+                    key={group.institutionName}
+                    className="rounded-2xl border bg-muted/10 p-4"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <p className="text-lg font-semibold">{account.name}</p>
-                        <p className="text-xs text-muted-strong">
-                          {account.type} ·{" "}
-                          {account.institution
-                            ? account.institution
-                            : "Unassigned"}{" "}
-                          {account.last4 ? `· ${account.last4}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-strong">
-                        <div className="text-foreground">{sparkline}</div>
-                        <Badge
-                          variant="secondary"
-                          className={
-                            account.syncStatus === "ok"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : account.syncStatus === "error"
-                              ? "bg-rose-100 text-rose-700"
-                              : account.syncStatus === "pending"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-muted text-foreground"
-                          }
-                          title={account.syncError ? account.syncError : statusLabel}
-                        >
-                          {statusLabel}
-                        </Badge>
-                        {staleFlag ? (
-                          <Badge variant="outline">Stale</Badge>
-                        ) : (
-                          <Badge variant="outline">Fresh</Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <p className="text-xs text-muted-strong">Balance</p>
                         <p className="text-lg font-semibold">
-                          {formatCurrency(balance)}
+                          {group.institutionName}
+                        </p>
+                        <p className="text-xs text-muted-strong">
+                          {group.accounts.length} account
+                          {group.accounts.length === 1 ? "" : "s"}
                         </p>
                       </div>
-                      <div>
+                      <div className="text-right">
                         <p className="text-xs text-muted-strong">
-                          {isCredit ? "Available credit" : "Available"}
+                          Total balance
                         </p>
                         <p className="text-lg font-semibold">
-                          {formatCurrency(available)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-strong">
-                          Statement close
-                        </p>
-                        <p className="font-medium">
-                          {dayToLabel(account.statementCloseDay)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-strong">
-                          Statement due
-                        </p>
-                        <p className="font-medium">
-                          {dayToLabel(account.statementDueDay)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-strong">Last updated</p>
-                        <p className="font-medium">
-                          {formatRelative(account.lastSyncAt)}
+                          {formatCurrency(groupTotal)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <div className="text-xs text-muted-strong">
-                        Sync health:{" "}
-                        <span title={account.syncError ?? ""}>
-                          {account.syncError ? account.syncError : "All clear"}
-                        </span>
-                      </div>
-                      {account.rewardCurrency ? (
-                        <Badge variant="outline">
-                          Rewards: {account.rewardCurrency}
-                        </Badge>
-                      ) : null}
-                    </div>
-
-                    {utilization !== null ? (
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between text-xs text-muted-strong">
-                          <span>Utilization</span>
-                          <span>{(utilization * 100).toFixed(1)}%</span>
-                        </div>
-                        <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                      {group.accounts.map((account) => {
+                        const isCredit = account.type === "credit";
+                        const balance = account.currentBalance;
+                        const available =
+                          isCredit && account.creditLimit
+                            ? account.availableCredit ??
+                              account.creditLimit - Math.abs(balance)
+                            : account.availableBalance ?? balance;
+                        const utilization =
+                          isCredit && account.creditLimit
+                            ? Math.abs(balance) / account.creditLimit
+                            : null;
+                        const staleFlag = healthSummary.find(
+                          (item) => item.id === account.id
+                        )?.stale;
+                        const statusLabel =
+                          account.syncStatus === "ok"
+                            ? "Healthy"
+                            : account.syncStatus === "pending"
+                            ? "MFA required"
+                            : account.syncStatus === "error"
+                            ? "Error"
+                            : account.syncStatus === "disconnected"
+                            ? "Disconnected"
+                            : "Manual";
+                        const sparkline = renderSparkline(
+                          transactionsByAccount.get(account.id) ?? [],
+                          account.type
+                        );
+                        return (
                           <div
-                            className={`h-2 rounded-full ${
-                              utilization >= 0.3
-                                ? "bg-rose-500"
-                                : "bg-emerald-500"
-                            }`}
-                            style={{
-                              width: `${Math.min(utilization * 100, 100)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ) : null}
+                            key={account.id}
+                            className="rounded-xl border bg-background p-4"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="text-lg font-semibold">
+                                  {account.name}
+                                </p>
+                                <p className="text-xs text-muted-strong">
+                                  {account.type}
+                                  {account.last4 ? ` · ${account.last4}` : ""}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-strong">
+                                <div className="text-foreground">
+                                  {sparkline}
+                                </div>
+                                <Badge
+                                  variant="secondary"
+                                  className={
+                                    account.syncStatus === "ok"
+                                      ? "bg-emerald-100 text-emerald-700"
+                                      : account.syncStatus === "error"
+                                      ? "bg-rose-100 text-rose-700"
+                                      : account.syncStatus === "pending"
+                                      ? "bg-amber-100 text-amber-700"
+                                      : "bg-muted text-foreground"
+                                  }
+                                  title={
+                                    account.syncError
+                                      ? account.syncError
+                                      : statusLabel
+                                  }
+                                >
+                                  {statusLabel}
+                                </Badge>
+                                {staleFlag ? (
+                                  <Badge variant="outline">Stale</Badge>
+                                ) : (
+                                  <Badge variant="outline">Fresh</Badge>
+                                )}
+                              </div>
+                            </div>
 
-                    <div className="mt-4 flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => handleSync(account.id)}
-                        disabled={syncing}
-                      >
-                        Sync now
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleDelete(account.id)}
-                      >
-                        Remove
-                      </Button>
+                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <p className="text-xs text-muted-strong">
+                                  Balance
+                                </p>
+                                <p className="text-lg font-semibold">
+                                  {formatCurrency(balance)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-strong">
+                                  {isCredit
+                                    ? "Available credit"
+                                    : "Available"}
+                                </p>
+                                <p className="text-lg font-semibold">
+                                  {formatCurrency(available)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-strong">
+                                  Statement close
+                                </p>
+                                <p className="font-medium">
+                                  {dayToLabel(account.statementCloseDay)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-strong">
+                                  Statement due
+                                </p>
+                                <p className="font-medium">
+                                  {dayToLabel(account.statementDueDay)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-strong">
+                                  Last updated
+                                </p>
+                                <p className="font-medium">
+                                  {formatRelative(account.lastSyncAt)}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                              <div className="text-xs text-muted-strong">
+                                Sync health:{" "}
+                                <span title={account.syncError ?? ""}>
+                                  {account.syncError
+                                    ? account.syncError
+                                    : "All clear"}
+                                </span>
+                              </div>
+                              {account.rewardCurrency ? (
+                                <Badge variant="outline">
+                                  Rewards: {account.rewardCurrency}
+                                </Badge>
+                              ) : null}
+                            </div>
+
+                            {utilization !== null ? (
+                              <div className="mt-4">
+                                <div className="flex items-center justify-between text-xs text-muted-strong">
+                                  <span>Utilization</span>
+                                  <span>
+                                    {(utilization * 100).toFixed(1)}%
+                                  </span>
+                                </div>
+                                <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                                  <div
+                                    className={`h-2 rounded-full ${
+                                      utilization >= 0.3
+                                        ? "bg-rose-500"
+                                        : "bg-emerald-500"
+                                    }`}
+                                    style={{
+                                      width: `${Math.min(
+                                        utilization * 100,
+                                        100
+                                      )}%`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ) : null}
+
+                            <div className="mt-4 flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => handleSync(account.id)}
+                                disabled={syncing}
+                              >
+                                Sync now
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => handleDelete(account.id)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
