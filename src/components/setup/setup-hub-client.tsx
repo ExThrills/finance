@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -239,6 +240,9 @@ const getDraftErrors = (draft: AccountDraft): DraftErrors => {
   if (draft.type === "credit") {
     if (limit === null || limit <= 0) {
       errors.creditLimit = "Credit cards need a limit.";
+    }
+    if (starting === null) {
+      errors.startingBalance = "Current balance is required.";
     }
   } else if (isRequiredStartingBalance(draft.type) && starting === null) {
     errors.startingBalance = "Starting balance is required.";
@@ -675,8 +679,13 @@ export function SetupHubClient() {
       const starting = parseAmountToCents(draft.startingBalance);
       const limit = parseAmountToCents(draft.creditLimit);
 
-      if (draft.type === "credit" && (limit === null || limit <= 0)) {
-        throw new Error("Credit cards need a credit limit.");
+      if (draft.type === "credit") {
+        if (starting === null || Number.isNaN(starting)) {
+          throw new Error("Credit cards need a current balance.");
+        }
+        if (limit === null || limit <= 0) {
+          throw new Error("Credit cards need a credit limit.");
+        }
       }
       if (
         draft.type !== "credit" &&
@@ -893,14 +902,20 @@ export function SetupHubClient() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Setup hub"
-        description="Start here to add accounts, debts, income, and recurring expenses."
+        title="Start here"
+        description="Capture your current financial position in a few quick steps."
         actions={
-          <Button onClick={addDraft} variant="outline">
-            Add account row
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">Step 1 of 5</Badge>
+            <Button onClick={addDraft} variant="outline">
+              Add account row
+            </Button>
+          </div>
         }
       />
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="space-y-6">
 
       <Card>
         <CardHeader>
@@ -920,6 +935,10 @@ export function SetupHubClient() {
           <CardTitle>Add bank + accounts</CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Group multiple checking, savings, and credit accounts under one bank.
+          </p>
+          <div className="mt-4">
           <form onSubmit={handleQuickSubmit} className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
               <div className="space-y-1">
@@ -1068,6 +1087,9 @@ export function SetupHubClient() {
                         }
                         placeholder="2500.00"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Use today’s balance so your totals are accurate.
+                      </p>
                     </div>
                     {draft.type === "credit" ? (
                       <>
@@ -1093,6 +1115,9 @@ export function SetupHubClient() {
                             }
                             placeholder="5000.00"
                           />
+                          <p className="text-xs text-muted-foreground">
+                            Helps calculate utilization.
+                          </p>
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`quick-apr-${draft.id}`}>APR (%)</Label>
@@ -1169,10 +1194,8 @@ export function SetupHubClient() {
                 </div>
               ))}
             </div>
-            <div className="text-xs text-muted-foreground">
-              Add multiple checking, savings, and credit accounts under one bank.
-            </div>
           </form>
+          </div>
         </CardContent>
       </Card>
 
@@ -1181,6 +1204,9 @@ export function SetupHubClient() {
           <CardTitle>Accounts & balances</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Add any additional accounts, assets, or manual balances.
+          </p>
           {drafts.map((draft, index) => {
             const errors = draftErrors[draft.id] ?? {};
             const showErrors = hasDraftInput(draft);
@@ -1233,29 +1259,68 @@ export function SetupHubClient() {
                   </Select>
                 </div>
                 {draft.type === "credit" ? (
-                  <div className="space-y-1">
-                    <Label>Credit limit</Label>
-                    <Input
-                      inputMode="decimal"
-                      value={draft.creditLimit}
-                      onChange={(event) =>
-                        updateDraft(draft.id, { creditLimit: event.target.value })
-                      }
-                      placeholder="5000.00"
-                      className={`min-w-0 ${
-                        errors.creditLimit && showErrors ? "border-rose-500" : ""
-                      }`}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          addDraft();
+                  <>
+                    <div className="space-y-1">
+                      <Label>Current balance</Label>
+                      <Input
+                        inputMode="decimal"
+                        value={draft.startingBalance}
+                        onChange={(event) =>
+                          updateDraft(draft.id, {
+                            startingBalance: event.target.value,
+                          })
                         }
-                      }}
-                    />
-                    {errors.creditLimit && showErrors ? (
-                      <p className="text-xs text-rose-600">{errors.creditLimit}</p>
-                    ) : null}
-                  </div>
+                        placeholder="1200.00"
+                        className={`min-w-0 ${
+                          errors.startingBalance && showErrors
+                            ? "border-rose-500"
+                            : ""
+                        }`}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            addDraft();
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Use today’s balance for accurate utilization.
+                      </p>
+                      {errors.startingBalance && showErrors ? (
+                        <p className="text-xs text-rose-600">
+                          {errors.startingBalance}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Credit limit</Label>
+                      <Input
+                        inputMode="decimal"
+                        value={draft.creditLimit}
+                        onChange={(event) =>
+                          updateDraft(draft.id, { creditLimit: event.target.value })
+                        }
+                        placeholder="5000.00"
+                        className={`min-w-0 ${
+                          errors.creditLimit && showErrors ? "border-rose-500" : ""
+                        }`}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            addDraft();
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Required to calculate credit usage.
+                      </p>
+                      {errors.creditLimit && showErrors ? (
+                        <p className="text-xs text-rose-600">
+                          {errors.creditLimit}
+                        </p>
+                      ) : null}
+                    </div>
+                  </>
                 ) : (
                   <div className="space-y-1">
                     <Label>Starting balance</Label>
@@ -1274,8 +1339,11 @@ export function SetupHubClient() {
                           event.preventDefault();
                           addDraft();
                         }
-                      }}
-                    />
+                        }}
+                      />
+                    <p className="text-xs text-muted-foreground">
+                      Enter the amount you have today.
+                    </p>
                     {errors.startingBalance && showErrors ? (
                       <p className="text-xs text-rose-600">{errors.startingBalance}</p>
                     ) : null}
@@ -1879,48 +1947,6 @@ export function SetupHubClient() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick review</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
-              Cash on hand
-            </p>
-            <p className="text-2xl font-semibold">{formatCurrency(summary.cashTotal)}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
-              Credit limits
-            </p>
-            <p className="text-2xl font-semibold">{formatCurrency(summary.creditLimit)}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
-              Utilization
-            </p>
-            <p className="text-2xl font-semibold">
-              {summary.creditLimit > 0 ? `${(summary.utilization * 100).toFixed(1)}%` : "—"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
-              Total debt
-            </p>
-            <p className="text-2xl font-semibold">{formatCurrency(summary.debtTotal)}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
-              Recurring net (monthly)
-            </p>
-            <p className="text-2xl font-semibold">
-              {summary.recurringNet ? formatCurrency(summary.recurringNet) : "—"}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
       <Toolbar className="px-4 py-3">
         <div className="text-sm text-muted-foreground">
           You can edit or add more details later in Accounts.
@@ -1937,6 +1963,60 @@ export function SetupHubClient() {
           </Button>
         </div>
       </Toolbar>
+        </div>
+
+        <div className="space-y-6 lg:sticky lg:top-24">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick review</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
+                  Cash on hand
+                </p>
+                <p className="text-2xl font-semibold">
+                  {formatCurrency(summary.cashTotal)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
+                  Credit limits
+                </p>
+                <p className="text-2xl font-semibold">
+                  {formatCurrency(summary.creditLimit)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
+                  Utilization
+                </p>
+                <p className="text-2xl font-semibold">
+                  {summary.creditLimit > 0
+                    ? `${(summary.utilization * 100).toFixed(1)}%`
+                    : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
+                  Total debt
+                </p>
+                <p className="text-2xl font-semibold">
+                  {formatCurrency(summary.debtTotal)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-strong">
+                  Recurring net (monthly)
+                </p>
+                <p className="text-2xl font-semibold">
+                  {summary.recurringNet ? formatCurrency(summary.recurringNet) : "—"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
