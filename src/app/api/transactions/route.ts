@@ -228,7 +228,7 @@ export async function POST(request: Request) {
         const payload: Record<string, number> = {
           current_balance: nextBalance,
         };
-        if (isCredit && account.credit_limit !== null) {
+        if (isCredit && typeof account.credit_limit === "number") {
           payload.available_credit =
             account.credit_limit - Math.abs(nextBalance);
         }
