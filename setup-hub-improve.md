@@ -70,23 +70,23 @@ Make Setup Hub the single "Start here" experience that is visually appealing, cl
 # TODOLIST
 
 ## Phase 1: MVP Polish
-- [ ] Update Setup Hub header copy to "Start here" language and explain outcome.
-- [ ] Add a compact progress indicator (e.g., 1 of 5 sections).
-- [ ] Create a bank-grouped quick add block for accounts.
-- [ ] Ensure credit cards show balance, credit limit, APR, statement close/due fields.
-- [ ] Ensure checking/savings/cash show balance input.
-- [ ] Add inline helper text for balances and credit limits.
-- [ ] Improve spacing/typography within section cards for readability.
-- [ ] Add a "Review summary" sticky card (desktop) with totals.
-- [ ] Add a clear "Finish setup" primary CTA and "Skip" secondary CTA.
+- [x] Update Setup Hub header copy to "Start here" language and explain outcome.
+- [x] Add a compact progress indicator (e.g., 1 of 5 sections).
+- [x] Create a bank-grouped quick add block for accounts.
+- [x] Ensure credit cards show balance, credit limit, APR, statement close/due fields.
+- [x] Ensure checking/savings/cash show balance input.
+- [x] Add inline helper text for balances and credit limits.
+- [x] Improve spacing/typography within section cards for readability.
+- [x] Add a "Review summary" sticky card (desktop) with totals.
+- [x] Add a clear "Finish setup" primary CTA and "Skip" secondary CTA.
 
 ## Phase 2: Guided Flow
-- [ ] Add step navigation (Accounts, Debts, Income, Categories, Review).
-- [ ] Allow collapsing completed steps.
-- [ ] Persist draft state to local storage for all steps.
-- [ ] Add "Add another under this bank" action per institution group.
-- [ ] Add inline validation only after field interaction.
-- [ ] Add empty-state prompts for each section.
+- [x] Add step navigation (Accounts, Debts, Income, Categories, Review).
+- [x] Allow collapsing completed steps.
+- [x] Persist draft state to local storage for all steps.
+- [x] Add "Add another under this bank" action per institution group.
+- [x] Add inline validation only after field interaction.
+- [x] Add empty-state prompts for each section.
 
 ## Phase 3: Automation + Smart Defaults
 - [ ] Pre-fill institution name/type from Plaid link where available.
