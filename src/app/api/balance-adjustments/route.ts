@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
     const { data: account, error: accountError } = await supabaseAdmin
       .from("accounts")
-      .select("id, current_balance")
+      .select("id, current_balance, type, credit_limit")
       .eq("id", parsed.data.accountId)
       .eq("user_id", userId)
       .single();
@@ -89,11 +89,20 @@ export async function POST(request: Request) {
       throw error;
     }
 
+    const nextBalance = account.current_balance + parsed.data.amount;
+    const payload: Record<string, number> = {
+      current_balance: nextBalance,
+    };
+    if (account.type === "credit" && account.credit_limit !== null) {
+      payload.available_credit = account.credit_limit - Math.abs(nextBalance);
+    }
+    if (account.type !== "credit") {
+      payload.available_balance = nextBalance;
+    }
+
     const { error: updateError } = await supabaseAdmin
       .from("accounts")
-      .update({
-        current_balance: account.current_balance + parsed.data.amount,
-      })
+      .update(payload)
       .eq("id", account.id)
       .eq("user_id", userId);
 

@@ -8,6 +8,14 @@ import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
@@ -15,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchJson } from "@/lib/api-client";
 import { accountTypes } from "@/lib/validators";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, parseAmountToCents } from "@/lib/format";
 import type { AccountRecord, TransactionWithRelations } from "@/types/finance";
 
 const dayToLabel = (day: number | null) => {
@@ -69,6 +77,19 @@ export function AccountsClient() {
   const [statementDueDay, setStatementDueDay] = useState("");
   const [rewardCurrency, setRewardCurrency] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const [editAccount, setEditAccount] = useState<AccountRecord | null>(null);
+  const [editDraft, setEditDraft] = useState({
+    name: "",
+    type: "checking",
+    institution: "",
+    last4: "",
+    balance: "",
+    creditLimit: "",
+    apr: "",
+    statementCloseDay: "",
+    statementDueDay: "",
+    rewardCurrency: "",
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -130,6 +151,111 @@ export function AccountsClient() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to create account.";
+      toast.error(message);
+    }
+  };
+
+  const openEditAccount = (account: AccountRecord) => {
+    setEditAccount(account);
+    setEditDraft({
+      name: account.name,
+      type: account.type,
+      institution: account.institution ?? "",
+      last4: account.last4 ?? "",
+      balance: (account.currentBalance / 100).toFixed(2),
+      creditLimit: account.creditLimit
+        ? (account.creditLimit / 100).toFixed(2)
+        : "",
+      apr: account.apr !== null && account.apr !== undefined ? String(account.apr) : "",
+      statementCloseDay:
+        account.statementCloseDay !== null && account.statementCloseDay !== undefined
+          ? String(account.statementCloseDay)
+          : "",
+      statementDueDay:
+        account.statementDueDay !== null && account.statementDueDay !== undefined
+          ? String(account.statementDueDay)
+          : "",
+      rewardCurrency: account.rewardCurrency ?? "",
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editAccount) {
+      return;
+    }
+    if (!editDraft.name.trim()) {
+      toast.error("Account name is required.");
+      return;
+    }
+    const parsedBalance = parseAmountToCents(editDraft.balance);
+    if (parsedBalance === null) {
+      toast.error("Enter a valid balance.");
+      return;
+    }
+    const parsedLimit = editDraft.creditLimit
+      ? parseAmountToCents(editDraft.creditLimit)
+      : null;
+    const parsedApr = editDraft.apr ? Number.parseFloat(editDraft.apr) : null;
+    const parsedClose = editDraft.statementCloseDay
+      ? Number.parseInt(editDraft.statementCloseDay, 10)
+      : null;
+    const parsedDue = editDraft.statementDueDay
+      ? Number.parseInt(editDraft.statementDueDay, 10)
+      : null;
+
+    try {
+      const updated = await fetchJson<AccountRecord>(
+        `/api/accounts/${editAccount.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: editDraft.name.trim(),
+            type: editDraft.type,
+            institution: editDraft.institution.trim() || undefined,
+            last4: editDraft.last4.trim() || undefined,
+            creditLimit:
+              parsedLimit !== null ? parsedLimit : undefined,
+            apr: parsedApr ?? undefined,
+            statementCloseDay: parsedClose ?? undefined,
+            statementDueDay: parsedDue ?? undefined,
+            rewardCurrency: editDraft.rewardCurrency.trim() || undefined,
+          }),
+        }
+      );
+
+      let nextAccount = updated;
+      const delta = parsedBalance - editAccount.currentBalance;
+      if (delta !== 0) {
+        await fetchJson("/api/balance-adjustments", {
+          method: "POST",
+          body: JSON.stringify({
+            accountId: editAccount.id,
+            amount: delta,
+            memo: "Manual edit",
+          }),
+        });
+        nextAccount = {
+          ...updated,
+          currentBalance: updated.currentBalance + delta,
+          availableBalance:
+            updated.type === "credit"
+              ? updated.availableBalance
+              : (updated.availableBalance ?? updated.currentBalance) + delta,
+          availableCredit:
+            updated.type === "credit" && updated.creditLimit
+              ? updated.creditLimit - Math.abs(updated.currentBalance + delta)
+              : updated.availableCredit,
+        };
+      }
+
+      setAccounts((prev) =>
+        prev.map((account) => (account.id === updated.id ? nextAccount : account))
+      );
+      setEditAccount(null);
+      toast.success("Account updated.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update account.";
       toast.error(message);
     }
   };
@@ -628,11 +754,18 @@ export function AccountsClient() {
                               </div>
                             ) : null}
 
-                            <div className="mt-4 flex items-center justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => handleSync(account.id)}
-                                disabled={syncing}
+                    <div className="mt-4 flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        onClick={() => openEditAccount(account)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleSync(account.id)}
+                        disabled={syncing}
                               >
                                 Sync now
                               </Button>
@@ -654,6 +787,182 @@ export function AccountsClient() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={Boolean(editAccount)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditAccount(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit account</DialogTitle>
+            <DialogDescription>
+              Update the account name, balance, and details.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Account name</Label>
+              <Input
+                value={editDraft.name}
+                onChange={(event) =>
+                  setEditDraft((prev) => ({
+                    ...prev,
+                    name: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Type</Label>
+              <Select
+                value={editDraft.type}
+                onValueChange={(value) =>
+                  setEditDraft((prev) => ({ ...prev, type: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accountTypes.map((accountType) => (
+                    <SelectItem key={accountType} value={accountType}>
+                      {accountType}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>
+                {editDraft.type === "credit" ? "Current balance" : "Balance"}
+              </Label>
+              <Input
+                inputMode="decimal"
+                value={editDraft.balance}
+                onChange={(event) =>
+                  setEditDraft((prev) => ({
+                    ...prev,
+                    balance: event.target.value,
+                  }))
+                }
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Institution</Label>
+              <Input
+                value={editDraft.institution}
+                onChange={(event) =>
+                  setEditDraft((prev) => ({
+                    ...prev,
+                    institution: event.target.value,
+                  }))
+                }
+                placeholder="Chase, Wells Fargo"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Last 4</Label>
+              <Input
+                value={editDraft.last4}
+                onChange={(event) =>
+                  setEditDraft((prev) => ({
+                    ...prev,
+                    last4: event.target.value,
+                  }))
+                }
+                placeholder="1234"
+                maxLength={4}
+              />
+            </div>
+            {editDraft.type === "credit" ? (
+              <>
+                <div className="space-y-1">
+                  <Label>Credit limit</Label>
+                  <Input
+                    inputMode="decimal"
+                    value={editDraft.creditLimit}
+                    onChange={(event) =>
+                      setEditDraft((prev) => ({
+                        ...prev,
+                        creditLimit: event.target.value,
+                      }))
+                    }
+                    placeholder="5000.00"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>APR (%)</Label>
+                  <Input
+                    inputMode="decimal"
+                    value={editDraft.apr}
+                    onChange={(event) =>
+                      setEditDraft((prev) => ({
+                        ...prev,
+                        apr: event.target.value,
+                      }))
+                    }
+                    placeholder="19.99"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Statement close day</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={editDraft.statementCloseDay}
+                    onChange={(event) =>
+                      setEditDraft((prev) => ({
+                        ...prev,
+                        statementCloseDay: event.target.value,
+                      }))
+                    }
+                    placeholder="25"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Statement due day</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={editDraft.statementDueDay}
+                    onChange={(event) =>
+                      setEditDraft((prev) => ({
+                        ...prev,
+                        statementDueDay: event.target.value,
+                      }))
+                    }
+                    placeholder="15"
+                  />
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <Label>Rewards currency</Label>
+                  <Input
+                    value={editDraft.rewardCurrency}
+                    onChange={(event) =>
+                      setEditDraft((prev) => ({
+                        ...prev,
+                        rewardCurrency: event.target.value,
+                      }))
+                    }
+                    placeholder="Points, Miles"
+                  />
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAccount(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSave}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
