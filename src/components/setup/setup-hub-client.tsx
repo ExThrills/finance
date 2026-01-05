@@ -2394,7 +2394,7 @@ export function SetupHubClient() {
           <Button type="button" variant="ghost" onClick={() => router.push("/")}>
             Skip for now
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={saving || hasErrors}>
+          <Button type="button" onClick={handleSubmit} disabled={saving}>
             {saving ? "Saving..." : "Finish setup"}
           </Button>
         </div>
