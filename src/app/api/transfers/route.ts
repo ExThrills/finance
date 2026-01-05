@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // Ensure both accounts belong to the user
     const { data: accounts, error: accountsError } = await supabaseAdmin
       .from("accounts")
-      .select("id, name")
+      .select("id, name, type, sync_status, current_balance, credit_limit")
       .eq("user_id", userId)
       .in("id", [data.sourceAccountId, data.destinationAccountId]);
 
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
         {
           user_id: userId,
           account_id: data.sourceAccountId,
-          category_id: null,
+          category_id: data.categoryId ?? null,
           amount: data.amount,
           date: toDateString(data.date),
           description: `${description} (out)`,
@@ -100,6 +100,45 @@ export async function POST(request: Request) {
 
     if (txError || !createdTransactions) {
       throw txError ?? new Error("Failed to create transfer legs");
+    }
+
+    const updateAccountBalance = async (
+      accountId: string,
+      delta: number
+    ) => {
+      const account = accounts.find((item) => item.id === accountId);
+      if (!account || account.sync_status !== "manual") {
+        return;
+      }
+      const nextBalance = (account.current_balance ?? 0) + delta;
+      const payload: Record<string, number> = {
+        current_balance: nextBalance,
+      };
+      if (account.type === "credit" && account.credit_limit !== null) {
+        payload.available_credit =
+          account.credit_limit - Math.abs(nextBalance);
+      }
+      if (account.type !== "credit") {
+        payload.available_balance = nextBalance;
+      }
+      await supabaseAdmin
+        .from("accounts")
+        .update(payload)
+        .eq("id", accountId)
+        .eq("user_id", userId);
+    };
+
+    const sourceAccount = accounts.find((item) => item.id === data.sourceAccountId);
+    const destinationAccount = accounts.find(
+      (item) => item.id === data.destinationAccountId
+    );
+    if (sourceAccount) {
+      await updateAccountBalance(sourceAccount.id, -data.amount);
+    }
+    if (destinationAccount) {
+      const delta =
+        destinationAccount.type === "credit" ? -data.amount : data.amount;
+      await updateAccountBalance(destinationAccount.id, delta);
     }
 
     return NextResponse.json({

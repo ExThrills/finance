@@ -30,6 +30,7 @@ type QuickAddProps = {
     sourceAccountId: string;
     destinationAccountId: string;
     memo?: string | null;
+    categoryId?: string | null;
   }) => void;
 };
 
@@ -49,6 +50,11 @@ export function QuickAddTransaction({
   const [isPending, setIsPending] = useState(false);
   const [isTransfer, setIsTransfer] = useState(false);
   const [destinationAccountId, setDestinationAccountId] = useState("");
+  const selectedCategory = categories.find((category) => category.id === categoryId);
+  const isCardPayment =
+    selectedCategory?.name.trim().toLowerCase() === "credit card payment";
+  const sourceAccount = accounts.find((account) => account.id === accountId);
+  const creditAccounts = accounts.filter((account) => account.type === "credit");
 
   useEffect(() => {
     if (!accountId && accounts.length > 0) {
@@ -57,10 +63,16 @@ export function QuickAddTransaction({
   }, [accountId, accounts]);
 
   useEffect(() => {
-    if (isTransfer) {
+    if (isTransfer && !isCardPayment) {
       setCategoryId(null);
     }
-  }, [isTransfer]);
+  }, [isTransfer, isCardPayment]);
+
+  useEffect(() => {
+    if (!isCardPayment) {
+      setDestinationAccountId("");
+    }
+  }, [isCardPayment]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -76,7 +88,25 @@ export function QuickAddTransaction({
     const trimmedDescription = description.trim() || "Quick add";
     const memo = notes.trim() || null;
 
-    if (isTransfer) {
+    if (isCardPayment) {
+      if (sourceAccount?.type === "credit") {
+        toast.error("Choose a cash account to pay from.");
+        return;
+      }
+      if (!destinationAccountId) {
+        toast.error("Select the credit card you paid.");
+        return;
+      }
+      onSubmitTransfer({
+        amount: cents,
+        date,
+        description: trimmedDescription,
+        sourceAccountId: accountId,
+        destinationAccountId,
+        memo,
+        categoryId: categoryId || null,
+      });
+    } else if (isTransfer) {
       if (!destinationAccountId) {
         toast.error("Select a destination account.");
         return;
@@ -160,7 +190,7 @@ export function QuickAddTransaction({
             onValueChange={(value) =>
               setCategoryId(value === "uncategorized" ? null : value)
             }
-            disabled={isTransfer}
+            disabled={isTransfer && !isCardPayment}
           >
             <SelectTrigger>
               <SelectValue placeholder="Uncategorized" />
@@ -209,8 +239,9 @@ export function QuickAddTransaction({
               type="checkbox"
               checked={isTransfer}
               onChange={(event) => setIsTransfer(event.target.checked)}
+              disabled={isCardPayment}
             />
-            Transfer/payment
+            Transfer
           </label>
           <Button type="submit" className="w-full lg:w-auto">
             Add
@@ -218,7 +249,7 @@ export function QuickAddTransaction({
         </div>
       </div>
 
-      {isTransfer ? (
+      {isTransfer && !isCardPayment ? (
         <div className="mt-3 space-y-1">
           <Label>Destination account</Label>
           <Select
@@ -236,6 +267,27 @@ export function QuickAddTransaction({
                     {account.name}
                   </SelectItem>
                 ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
+      {isCardPayment ? (
+        <div className="mt-3 space-y-1">
+          <Label>Credit card to pay</Label>
+          <Select
+            value={destinationAccountId}
+            onValueChange={setDestinationAccountId}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select card" />
+            </SelectTrigger>
+            <SelectContent>
+              {creditAccounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

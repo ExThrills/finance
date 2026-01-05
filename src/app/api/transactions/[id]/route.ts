@@ -10,6 +10,23 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
+const computeBalanceDelta = ({
+  accountType,
+  categoryKind,
+  amount,
+}: {
+  accountType: string;
+  categoryKind: string | null;
+  amount: number;
+}) => {
+  const normalizedKind = categoryKind ?? "expense";
+  const isCredit = accountType === "credit";
+  if (normalizedKind === "income") {
+    return isCredit ? -amount : amount;
+  }
+  return isCredit ? amount : -amount;
+};
+
 export async function PATCH(request: NextRequest, { params }: Params) {
   const { id } = await params;
   try {
@@ -212,6 +229,125 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       });
     }
 
+    if (Object.keys(patch).length) {
+      const accountIds = Array.from(
+        new Set([existing.account_id, nextAccountId].filter(Boolean))
+      );
+      const categoryIds = Array.from(
+        new Set([existing.category_id, parsed.data.categoryId ?? existing.category_id].filter(Boolean))
+      );
+      const { data: accounts } = await supabaseAdmin
+        .from("accounts")
+        .select("id, type, sync_status, current_balance, credit_limit")
+        .eq("user_id", userId)
+        .in("id", accountIds);
+      const { data: categories } = await supabaseAdmin
+        .from("categories")
+        .select("id, kind")
+        .eq("user_id", userId)
+        .in("id", categoryIds);
+
+      const accountMap = new Map(accounts?.map((item) => [item.id, item]) ?? []);
+      const categoryMap = new Map(categories?.map((item) => [item.id, item]) ?? []);
+
+      const oldAccount = accountMap.get(existing.account_id);
+      const newAccount = accountMap.get(nextAccountId);
+      const oldCategoryKind =
+        existing.category_id ? categoryMap.get(existing.category_id)?.kind ?? null : null;
+      const newCategoryId = parsed.data.categoryId ?? existing.category_id;
+      const newCategoryKind = newCategoryId
+        ? categoryMap.get(newCategoryId)?.kind ?? null
+        : null;
+      const oldAmount = existing.amount;
+      const newAmount = parsed.data.amount ?? existing.amount;
+
+      if (oldAccount && newAccount && oldAccount.id === newAccount.id) {
+        const oldDelta = computeBalanceDelta({
+          accountType: oldAccount.type,
+          categoryKind: oldCategoryKind,
+          amount: oldAmount,
+        });
+        const newDelta = computeBalanceDelta({
+          accountType: newAccount.type,
+          categoryKind: newCategoryKind,
+          amount: newAmount,
+        });
+        const diff = newDelta - oldDelta;
+        if (diff !== 0 && newAccount.sync_status === "manual") {
+          const nextBalance = (newAccount.current_balance ?? 0) + diff;
+          const payload: Record<string, number> = {
+            current_balance: nextBalance,
+          };
+          if (newAccount.type === "credit" && newAccount.credit_limit !== null) {
+            payload.available_credit =
+              newAccount.credit_limit - Math.abs(nextBalance);
+          }
+          if (newAccount.type !== "credit") {
+            payload.available_balance = nextBalance;
+          }
+          await supabaseAdmin
+            .from("accounts")
+            .update(payload)
+            .eq("id", newAccount.id)
+            .eq("user_id", userId);
+        }
+      } else {
+        const oldDelta =
+          oldAccount && oldAccount.sync_status === "manual"
+            ? computeBalanceDelta({
+                accountType: oldAccount.type,
+                categoryKind: oldCategoryKind,
+                amount: oldAmount,
+              })
+            : 0;
+        if (oldAccount && oldAccount.sync_status === "manual" && oldDelta !== 0) {
+          const nextBalance = (oldAccount.current_balance ?? 0) - oldDelta;
+          const payload: Record<string, number> = {
+            current_balance: nextBalance,
+          };
+          if (oldAccount.type === "credit" && oldAccount.credit_limit !== null) {
+            payload.available_credit =
+              oldAccount.credit_limit - Math.abs(nextBalance);
+          }
+          if (oldAccount.type !== "credit") {
+            payload.available_balance = nextBalance;
+          }
+          await supabaseAdmin
+            .from("accounts")
+            .update(payload)
+            .eq("id", oldAccount.id)
+            .eq("user_id", userId);
+        }
+
+        const newDelta =
+          newAccount && newAccount.sync_status === "manual"
+            ? computeBalanceDelta({
+                accountType: newAccount.type,
+                categoryKind: newCategoryKind,
+                amount: newAmount,
+              })
+            : 0;
+        if (newAccount && newAccount.sync_status === "manual" && newDelta !== 0) {
+          const nextBalance = (newAccount.current_balance ?? 0) + newDelta;
+          const payload: Record<string, number> = {
+            current_balance: nextBalance,
+          };
+          if (newAccount.type === "credit" && newAccount.credit_limit !== null) {
+            payload.available_credit =
+              newAccount.credit_limit - Math.abs(nextBalance);
+          }
+          if (newAccount.type !== "credit") {
+            payload.available_balance = nextBalance;
+          }
+          await supabaseAdmin
+            .from("accounts")
+            .update(payload)
+            .eq("id", newAccount.id)
+            .eq("user_id", userId);
+        }
+      }
+    }
+
     return NextResponse.json(toTransactionWithRelations(hydrated as any));
   } catch (error) {
     console.error("PATCH /api/transactions/[id] failed", error);
@@ -228,7 +364,7 @@ export async function DELETE(_: NextRequest, { params }: Params) {
     const userId = await getCurrentUserId();
     const { data: existing, error: findError } = await supabaseAdmin
       .from("transactions")
-      .select("id, account_id, date")
+      .select("id, account_id, category_id, amount, date")
       .eq("id", id)
       .eq("user_id", userId)
       .single();
@@ -266,6 +402,47 @@ export async function DELETE(_: NextRequest, { params }: Params) {
       .eq("user_id", userId);
     if (error) {
       throw error;
+    }
+
+    const { data: account } = await supabaseAdmin
+      .from("accounts")
+      .select("id, type, sync_status, current_balance, credit_limit")
+      .eq("user_id", userId)
+      .eq("id", existing.account_id)
+      .maybeSingle();
+    const { data: category } = existing.category_id
+      ? await supabaseAdmin
+          .from("categories")
+          .select("id, kind")
+          .eq("user_id", userId)
+          .eq("id", existing.category_id)
+          .maybeSingle()
+      : { data: null };
+
+    if (account && account.sync_status === "manual" && category?.kind) {
+      const delta = computeBalanceDelta({
+        accountType: account.type,
+        categoryKind: category.kind ?? null,
+        amount: existing.amount,
+      });
+      if (delta !== 0) {
+        const nextBalance = (account.current_balance ?? 0) - delta;
+        const payload: Record<string, number> = {
+          current_balance: nextBalance,
+        };
+        if (account.type === "credit" && account.credit_limit !== null) {
+          payload.available_credit =
+            account.credit_limit - Math.abs(nextBalance);
+        }
+        if (account.type !== "credit") {
+          payload.available_balance = nextBalance;
+        }
+        await supabaseAdmin
+          .from("accounts")
+          .update(payload)
+          .eq("id", account.id)
+          .eq("user_id", userId);
+      }
     }
 
     await logAuditEvent({

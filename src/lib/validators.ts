@@ -86,6 +86,7 @@ export const transferSchema = z.object({
   date: z.coerce.date(),
   memo: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  categoryId: z.string().min(1).nullable().optional(),
 });
 
 export const savedViewSchema = z.object({

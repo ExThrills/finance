@@ -210,6 +210,39 @@ export async function POST(request: Request) {
       throw hydrateError ?? new Error("Failed to hydrate transaction");
     }
 
+    const account = hydrated.account as { type: string; sync_status?: string; current_balance?: number; credit_limit?: number } | null;
+    const category = hydrated.category as { kind?: string } | null;
+    if (account && account.sync_status === "manual") {
+      const categoryKind = category?.kind ?? "expense";
+      const isCredit = account.type === "credit";
+      const delta =
+        categoryKind === "income"
+          ? isCredit
+            ? -hydrated.amount
+            : hydrated.amount
+          : isCredit
+          ? hydrated.amount
+          : -hydrated.amount;
+      if (delta !== 0) {
+        const nextBalance = (account.current_balance ?? 0) + delta;
+        const payload: Record<string, number> = {
+          current_balance: nextBalance,
+        };
+        if (isCredit && account.credit_limit !== null) {
+          payload.available_credit =
+            account.credit_limit - Math.abs(nextBalance);
+        }
+        if (!isCredit) {
+          payload.available_balance = nextBalance;
+        }
+        await supabaseAdmin
+          .from("accounts")
+          .update(payload)
+          .eq("id", hydrated.account_id)
+          .eq("user_id", userId);
+      }
+    }
+
     await logAuditEvent({
       userId,
       actorId: userId,

@@ -134,6 +134,7 @@ const defaultCategories: Array<{ name: string; kind: "expense" | "income" }> = [
   { name: "Shopping", kind: "expense" },
   { name: "Subscriptions", kind: "expense" },
   { name: "Fees", kind: "expense" },
+  { name: "Credit Card Payment", kind: "expense" },
 ];
 
 const ruleTemplates: RuleTemplate[] = [

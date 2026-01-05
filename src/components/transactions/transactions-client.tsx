@@ -395,6 +395,7 @@ export function TransactionsClient() {
     sourceAccountId: string;
     destinationAccountId: string;
     memo?: string | null;
+    categoryId?: string | null;
   }) => {
     try {
       const response = await fetchJson<{
