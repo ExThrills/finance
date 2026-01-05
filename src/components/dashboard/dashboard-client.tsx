@@ -161,12 +161,41 @@ export function DashboardClient() {
   }, [accountById, scope, transactions]);
 
   const cashOnHand = useMemo(() => {
+    const cashTypes = new Set(["checking", "savings", "cash"]);
+    const transactionDelta = scopedTransactions.reduce(
+      (acc, tx) => {
+        const account = accountById.get(tx.accountId);
+        if (!account || !cashTypes.has(account.type)) {
+          return acc;
+        }
+        const description = tx.description?.toLowerCase() ?? "";
+        let direction = 0;
+        if (tx.transferId) {
+          if (description.includes("(in)")) {
+            direction = 1;
+          } else if (description.includes("(out)")) {
+            direction = -1;
+          }
+        } else {
+          direction = tx.category?.kind === "income" ? 1 : -1;
+        }
+        const next = acc.get(tx.accountId) ?? 0;
+        acc.set(tx.accountId, next + direction * tx.amount);
+        return acc;
+      },
+      new Map<string, number>()
+    );
+
     return scopedAccounts
-      .filter((account) =>
-        ["checking", "savings", "cash"].includes(account.type)
-      )
-      .reduce((sum, account) => sum + (account.currentBalance || 0), 0);
-  }, [scopedAccounts]);
+      .filter((account) => cashTypes.has(account.type))
+      .reduce((sum, account) => {
+        const base = account.currentBalance || 0;
+        if (account.syncStatus === "manual") {
+          return sum + base + (transactionDelta.get(account.id) ?? 0);
+        }
+        return sum + base;
+      }, 0);
+  }, [accountById, scopedAccounts, scopedTransactions]);
 
   const upcomingBills = useMemo(() => {
     const start = new Date();
