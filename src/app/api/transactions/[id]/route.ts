@@ -232,20 +232,27 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (Object.keys(patch).length) {
       const accountIds = Array.from(
         new Set([existing.account_id, nextAccountId].filter(Boolean))
-      );
+      ) as string[];
       const categoryIds = Array.from(
-        new Set([existing.category_id, parsed.data.categoryId ?? existing.category_id].filter(Boolean))
+        new Set(
+          [existing.category_id, parsed.data.categoryId ?? existing.category_id].filter(
+            (value): value is string => Boolean(value)
+          )
+        )
       );
       const { data: accounts } = await supabaseAdmin
         .from("accounts")
         .select("id, type, sync_status, current_balance, credit_limit")
         .eq("user_id", userId)
         .in("id", accountIds);
-      const { data: categories } = await supabaseAdmin
-        .from("categories")
-        .select("id, kind")
-        .eq("user_id", userId)
-        .in("id", categoryIds);
+      const { data: categories } =
+        categoryIds.length > 0
+          ? await supabaseAdmin
+              .from("categories")
+              .select("id, kind")
+              .eq("user_id", userId)
+              .in("id", categoryIds)
+          : { data: [] };
 
       const accountMap = new Map(accounts?.map((item) => [item.id, item]) ?? []);
       const categoryMap = new Map(categories?.map((item) => [item.id, item]) ?? []);
