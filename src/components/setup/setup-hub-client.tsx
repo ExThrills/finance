@@ -626,45 +626,41 @@ export function SetupHubClient() {
 
   const draftErrors = useMemo(() => {
     return drafts.reduce<Record<string, DraftErrors>>((acc, draft) => {
-      acc[draft.id] =
-        hasSubmitted || isAccountDraftActive(draft) ? getDraftErrors(draft) : {};
+      acc[draft.id] = isAccountDraftActive(draft) ? getDraftErrors(draft) : {};
       return acc;
     }, {});
-  }, [drafts, hasSubmitted]);
+  }, [drafts]);
 
   const debtErrors = useMemo(() => {
     return debtDrafts.reduce<Record<string, DebtErrors>>((acc, debt) => {
-      acc[debt.id] =
-        hasSubmitted || isDebtDraftActive(debt) ? getDebtErrors(debt) : {};
+      acc[debt.id] = isDebtDraftActive(debt) ? getDebtErrors(debt) : {};
       return acc;
     }, {});
-  }, [debtDrafts, hasSubmitted]);
+  }, [debtDrafts]);
 
   const categoryErrors = useMemo(() => {
     return customCategories.reduce<Record<string, CategoryErrors>>(
       (acc, category) => {
-        acc[category.id] =
-          hasSubmitted || isCategoryDraftActive(category)
-            ? getCategoryErrors(category)
-            : {};
+        acc[category.id] = isCategoryDraftActive(category)
+          ? getCategoryErrors(category)
+          : {};
         return acc;
       },
       {}
     );
-  }, [customCategories, hasSubmitted]);
+  }, [customCategories]);
 
   const recurringErrors = useMemo(() => {
     return recurringDrafts.reduce<Record<string, RecurringErrors>>(
       (acc, recurring) => {
-        acc[recurring.id] =
-          hasSubmitted || isRecurringDraftActive(recurring)
-            ? getRecurringErrors(recurring)
-            : {};
+        acc[recurring.id] = isRecurringDraftActive(recurring)
+          ? getRecurringErrors(recurring)
+          : {};
         return acc;
       },
       {}
     );
-  }, [recurringDrafts, hasSubmitted]);
+  }, [recurringDrafts]);
 
   const hasAccountErrors = useMemo(
     () => Object.values(draftErrors).some((errors) => Object.keys(errors).length > 0),
