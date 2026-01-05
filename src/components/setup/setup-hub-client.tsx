@@ -241,6 +241,36 @@ const isRequiredStartingBalance = (type: string) =>
 const buildCategoryKey = (name: string, kind: string) =>
   `${name.trim().toLowerCase()}::${kind}`;
 
+const isAccountDraftActive = (draft: AccountDraft) =>
+  [
+    draft.name,
+    draft.startingBalance,
+    draft.creditLimit,
+    draft.institution,
+    draft.last4,
+    draft.statementCloseDay,
+    draft.statementDueDay,
+    draft.rewardCurrency,
+    draft.apr,
+  ].some((value) => value.trim() !== "");
+
+const isDebtDraftActive = (debt: DebtDraft) =>
+  [debt.name, debt.currentBalance, debt.apr, debt.dueDay].some(
+    (value) => value.trim() !== ""
+  );
+
+const isCategoryDraftActive = (category: CategoryDraft) =>
+  category.name.trim().length > 0;
+
+const isRecurringDraftActive = (recurring: RecurringDraft) =>
+  [
+    recurring.description,
+    recurring.amount,
+    recurring.nextDate,
+    recurring.accountRef,
+    recurring.categoryKey,
+  ].some((value) => value.trim() !== "");
+
 const getDraftErrors = (draft: AccountDraft): DraftErrors => {
   const errors: DraftErrors = {};
   if (!draft.name.trim()) {
@@ -596,31 +626,45 @@ export function SetupHubClient() {
 
   const draftErrors = useMemo(() => {
     return drafts.reduce<Record<string, DraftErrors>>((acc, draft) => {
-      acc[draft.id] = getDraftErrors(draft);
+      acc[draft.id] =
+        hasSubmitted || isAccountDraftActive(draft) ? getDraftErrors(draft) : {};
       return acc;
     }, {});
-  }, [drafts]);
+  }, [drafts, hasSubmitted]);
 
   const debtErrors = useMemo(() => {
     return debtDrafts.reduce<Record<string, DebtErrors>>((acc, debt) => {
-      acc[debt.id] = getDebtErrors(debt);
+      acc[debt.id] =
+        hasSubmitted || isDebtDraftActive(debt) ? getDebtErrors(debt) : {};
       return acc;
     }, {});
-  }, [debtDrafts]);
+  }, [debtDrafts, hasSubmitted]);
 
   const categoryErrors = useMemo(() => {
-    return customCategories.reduce<Record<string, CategoryErrors>>((acc, category) => {
-      acc[category.id] = getCategoryErrors(category);
-      return acc;
-    }, {});
-  }, [customCategories]);
+    return customCategories.reduce<Record<string, CategoryErrors>>(
+      (acc, category) => {
+        acc[category.id] =
+          hasSubmitted || isCategoryDraftActive(category)
+            ? getCategoryErrors(category)
+            : {};
+        return acc;
+      },
+      {}
+    );
+  }, [customCategories, hasSubmitted]);
 
   const recurringErrors = useMemo(() => {
-    return recurringDrafts.reduce<Record<string, RecurringErrors>>((acc, recurring) => {
-      acc[recurring.id] = getRecurringErrors(recurring);
-      return acc;
-    }, {});
-  }, [recurringDrafts]);
+    return recurringDrafts.reduce<Record<string, RecurringErrors>>(
+      (acc, recurring) => {
+        acc[recurring.id] =
+          hasSubmitted || isRecurringDraftActive(recurring)
+            ? getRecurringErrors(recurring)
+            : {};
+        return acc;
+      },
+      {}
+    );
+  }, [recurringDrafts, hasSubmitted]);
 
   const hasAccountErrors = useMemo(
     () => Object.values(draftErrors).some((errors) => Object.keys(errors).length > 0),
@@ -835,7 +879,8 @@ export function SetupHubClient() {
       return;
     }
 
-    const payloads = drafts.map((draft) => {
+    const activeDrafts = drafts.filter(isAccountDraftActive);
+    const payloads = activeDrafts.map((draft) => {
       if (!draft.name.trim()) {
         throw new Error("Every account needs a name.");
       }
@@ -879,7 +924,8 @@ export function SetupHubClient() {
       };
     });
 
-    const debtPayloads = debtDrafts.map((debt) => {
+    const activeDebtDrafts = debtDrafts.filter(isDebtDraftActive);
+    const debtPayloads = activeDebtDrafts.map((debt) => {
       if (!debt.name.trim()) {
         throw new Error("Every debt needs a lender name.");
       }
@@ -974,7 +1020,7 @@ export function SetupHubClient() {
 
       const accountPayloads = payloads.map((payload, index) => ({
         payload,
-        draftId: drafts[index]?.id,
+        draftId: activeDrafts[index]?.id,
       }));
 
       const createdAccounts = await Promise.all(
@@ -1001,9 +1047,10 @@ export function SetupHubClient() {
         );
       }
 
-      if (recurringDrafts.length) {
+      const activeRecurringDrafts = recurringDrafts.filter(isRecurringDraftActive);
+      if (activeRecurringDrafts.length) {
         await Promise.all(
-          recurringDrafts.map((recurring) => {
+          activeRecurringDrafts.map((recurring) => {
             const account = accountLookup.get(recurring.accountRef);
             if (!account) {
               throw new Error("Recurring entries need a linked account.");
@@ -1042,7 +1089,7 @@ export function SetupHubClient() {
               accountsCount: payloads.length,
               debtsCount: debtPayloads.length,
               categoriesCount: categoryPayloads.length,
-              recurringCount: recurringDrafts.length,
+              recurringCount: activeRecurringDrafts.length,
             }),
           });
           window.localStorage.removeItem(setupStartKey);
